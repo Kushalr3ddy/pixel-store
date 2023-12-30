@@ -25,13 +25,20 @@ while raw_bytes:
 
 print(f"\n{'-'*10}{count}:{len(bit_sequence)}{'-'*10}")
 print("\npadded bytes indexes:")
+
+"""
 for _ in padded_bytes:
     print(f"{_}",end=", ")
 
+
 print(f"reconstructing file")
 
-reconstructed_bytes = bytes([int(byte, 2) for byte in bit_sequence])
+reconstructed_bytes = [int(byte, 2) for byte in bit_sequence]
+reconstructed_bytes = bytes(reconstructed_bytes)
 print(f"length of bytes:{len(reconstructed_bytes)}")
 
 with open("output.pdf","wb") as out:
     out.write(reconstructed_bytes)
+
+
+"""

@@ -2,3 +2,8 @@ test.py
 *.txt
 *~*
 *.pdf
+custom_image.png
+construct_image.py
+test.png
+decode.py
+.vscode/
