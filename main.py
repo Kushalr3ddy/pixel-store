@@ -16,6 +16,7 @@ while raw_bytes:
     curr_byte = curr_byte[2:]
     if len(curr_byte) < 8:
         # fill up the lsb so if a byte is 1010 it will become 00001010
+        # this is done so it becomes 8 bits ie one whole byte for easy parsing later on
         curr_byte = curr_byte.zfill(8)
         padded_bytes.append(count)
     print((curr_byte),end=" ")
@@ -26,19 +27,3 @@ while raw_bytes:
 print(f"\n{'-'*10}{count}:{len(bit_sequence)}{'-'*10}")
 print("\npadded bytes indexes:")
 
-"""
-for _ in padded_bytes:
-    print(f"{_}",end=", ")
-
-
-print(f"reconstructing file")
-
-reconstructed_bytes = [int(byte, 2) for byte in bit_sequence]
-reconstructed_bytes = bytes(reconstructed_bytes)
-print(f"length of bytes:{len(reconstructed_bytes)}")
-
-with open("output.pdf","wb") as out:
-    out.write(reconstructed_bytes)
-
-
-"""
