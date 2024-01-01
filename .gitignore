@@ -7,3 +7,6 @@ construct_image.py
 test.png
 decode.py
 .vscode/
+discard.py
+color_bars.png
+color_blocks.png
