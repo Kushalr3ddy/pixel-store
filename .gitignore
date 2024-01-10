@@ -8,3 +8,12 @@ test.png
 discard.py
 color_bars.png
 color_blocks.png
+*optimised*
+scheduler.py
+
+payload.png
+data/
+check.py
+video_encoder.py
+*.mp4
+*.avi

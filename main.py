@@ -2,7 +2,7 @@ from PIL import Image
 #import requests
 
 im = Image.open("./color_bars.png")
-pdf = open("./dummy.pdf","rb")
+pdf = open("./bigc.pdf","rb")
 pixel_values = list(im.getdata())
 
 #print(pixel_values[0:4])
@@ -19,7 +19,7 @@ while raw_bytes:
         # this is done so it becomes 8 bits ie one whole byte for easy parsing later on
         curr_byte = curr_byte.zfill(8)
         padded_bytes.append(count)
-    print((curr_byte),end=" ")
+    print((curr_byte))#,end=" ")
     raw_bytes = pdf.read(1)
     bit_sequence.append(curr_byte)
     count+=1
