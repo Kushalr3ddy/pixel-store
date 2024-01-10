@@ -15,5 +15,7 @@ payload.png
 data/
 check.py
 video_encoder.py
+video_decoder.py
 *.mp4
 *.avi
+out/
