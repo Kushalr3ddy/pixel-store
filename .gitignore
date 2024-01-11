@@ -19,3 +19,4 @@ check.py
 *.mp4
 *.avi
 out/
+ffmpeg_build/
