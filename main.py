@@ -1,9 +1,9 @@
 from PIL import Image
 #import requests
 
-im = Image.open("./color_bars.png")
+#im = Image.open("./color_bars.png")
 pdf = open("./bigc.pdf","rb")
-pixel_values = list(im.getdata())
+#pixel_values = list(im.getdata())
 
 #print(pixel_values[0:4])
 #print(f"length of pixel array:{len(pixel_values)}")
@@ -24,6 +24,6 @@ while raw_bytes:
     bit_sequence.append(curr_byte)
     count+=1
 
-print(f"\n{'-'*10}{count}:{len(bit_sequence)}{'-'*10}")
-print("\npadded bytes indexes:")
+#print(f"\n{'-'*10}{count}:{len(bit_sequence)}{'-'*10}")
+#print("\npadded bytes indexes:")
 
