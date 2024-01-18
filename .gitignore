@@ -20,3 +20,4 @@ check.py
 *.avi
 out/
 ffmpeg_build/
+.env

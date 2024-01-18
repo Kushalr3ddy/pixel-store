@@ -29,8 +29,8 @@ height, width, layers = frame.shape
 
 #video = cv2.VideoWriter(video_name, 0, 1, (width,height))
 
-#fourcc = cv2.VideoWriter_fourcc(*'FFV1')
-fourcc = cv2.VideoWriter_fourcc(*'X264')
+fourcc = cv2.VideoWriter_fourcc(*'FFV1')
+#fourcc = cv2.VideoWriter_fourcc(*'X264')
 video = cv2.VideoWriter(video_name, fourcc, 1, (width, height))
 
 for image in images:
