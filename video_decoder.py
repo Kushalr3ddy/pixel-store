@@ -22,7 +22,7 @@ while True:
         break
 
     # Save the frame as an image
-    cv2.imwrite(f'out/frame_{frame_count}.jpg', frame)
+    cv2.imwrite(f'test/frame_{frame_count}.png', frame)
 
     # Increment frame count
     frame_count += 1

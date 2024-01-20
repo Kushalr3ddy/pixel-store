@@ -21,3 +21,4 @@ check.py
 out/
 ffmpeg_build/
 .env
+test/

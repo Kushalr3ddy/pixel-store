@@ -24,6 +24,7 @@ while raw_bytes:
     bit_sequence.append(curr_byte)
     count+=1
 
+
 #print(f"\n{'-'*10}{count}:{len(bit_sequence)}{'-'*10}")
 #print("\npadded bytes indexes:")
 
