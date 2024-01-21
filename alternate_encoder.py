@@ -30,3 +30,4 @@ output_video = 'output_video.avi'
     .output(output_video, vcodec='huffyuv', pix_fmt='rgb24')  # Lagarith codec with RGB24 pixel format
     .run(cmd=ffmpeg_path)
 )
+

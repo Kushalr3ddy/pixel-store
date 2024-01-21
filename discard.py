@@ -9,4 +9,3 @@ for x in range(640):
     for y in range(480):
         print(pixels[x,y])
 
-

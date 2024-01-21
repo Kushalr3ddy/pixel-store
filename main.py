@@ -1,5 +1,11 @@
 from PIL import Image
-#import requests
+import json
+
+import os
+
+
+
+
 
 #im = Image.open("./color_bars.png")
 pdf = open("./bigc.pdf","rb")
@@ -27,4 +33,3 @@ while raw_bytes:
 
 #print(f"\n{'-'*10}{count}:{len(bit_sequence)}{'-'*10}")
 #print("\npadded bytes indexes:")
-
