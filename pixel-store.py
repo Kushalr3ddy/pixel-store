@@ -1,14 +1,22 @@
 from ast import Tuple
+from fileinput import filename
 from PIL import Image
 
 import os
 import json
 from dotenv import load_dotenv
 import ffmpeg
-
+import json
 #getting the path of ffmpeg binary
 load_dotenv()
 ffmpeg_path = os.getenv("ffmpeg")
+ffprobe_path = os.getenv("ffprobe")
+
+#pixel colors
+red=(255,0,0)
+blue = (0, 0, 255)  # ignore this for now
+one=(0,0,0)
+zero = (255,255,255)
 
 
 #separate classes for encoder object and decoder object
@@ -70,10 +78,7 @@ class Encoder:
         
 
     def encode(self):
-        red_color =(255,0,0)
-        blue_color = (0, 0, 255)  # ignore this for now
-        one=(0,0,0)
-        zero = (255,255,255)
+        
         no_of_frames = 1
         width, height = 640,480 # test with 480p for now later add other resolutions
         total_pixels = width * height
@@ -82,7 +87,7 @@ class Encoder:
         last_frame =0
         
         # this is for storing all the images (frames) that are created as a result of converting bits to pixels
-        png_folder ="data"
+        png_folder ="frames"
 
         # create the folder if it doesnt exist
         if not os.path.exists(png_folder):
@@ -129,7 +134,7 @@ class Encoder:
                     count+=1
 
             #image.save(f'data/encoded{frame}.png')
-            image.save(os.path.join(png_folder,f"encoded{frame}.png"))
+            image.save(os.path.join(png_folder,f"frame{frame}.png"))
                 
         #check where the bits end
         if self.end_y < height:
@@ -139,16 +144,16 @@ class Encoder:
             self.end_y=0
         
         #put the red pixel after the last bit encoded to indicate the end bit
-        image.putpixel((self.end_x, self.end_y), red_color)
+        image.putpixel((self.end_x, self.end_y), red)
         #image.save(f'data/encoded{last_frame}.png')
-        image.save(os.path.join(png_folder,f"encoded{last_frame}.png"))
+        image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
         
         
         ####below this line is the ffmpeg encoder stuff
 
 
         #image = Image.new
-        input_pattern = os.path.join(png_folder,"encoded%d.png")
+        input_pattern = os.path.join(png_folder,"frame%d.png")
         output_video = self.fileout
         (
         ffmpeg
@@ -161,24 +166,104 @@ class Encoder:
     
     @property
     def end_pixels(self):
-        return Tuple(self.end_x,self.end_y)
+        return (self.end_x,self.end_y) #convert this to json ?
 
     @property
     def metadata(self):
-        pass
-
-
-class Decoder:
-    # use the ffmpeg probe method to get metadata of video
-    def __init__(self):
-        pass
-
-enc1= Encoder("bigc.pdf")
-print(enc1.size)
-print(enc1.filename)
-print(enc1.fileout)
-print(enc1.fps)
-#print(enc1.ripped_bytes)
-enc1.encode()
-print(f"end pixels are{enc1.end_pixels}")
+        """
+        need to add metadata to the video itself
+        such as the x and y coordinates of the end pixel of the raw bits
+        add the original file name with extension to save when decoding
+        hash of the file to verify the integrity? prolly will not be required
         
+        """
+        pass
+
+# the Decoder class below
+#
+class Decoder:
+    
+    def __init__(self,filename):
+        self.filename=filename
+        self.ripped_bytes =[]
+    
+    @property
+    def fileout(self):
+        video_name = self.filename.split("_")
+        return video_name[0] + "." + video_name[1]
+    
+    @property
+    def metadata(self):
+        #this method is to return the metadata about the video file in a json format
+        m_data = ffmpeg.probe(self.filename,cmd=ffprobe_path) # type: ignore
+        return m_data
+    
+    def extract_frames(self):
+        #output pattern to take the video and convert to frames
+        if not os.path.exists("frames"):
+            os.mkdir("frames")
+        
+        output_pattern = os.path.join("frames","frame%d.png")
+        (
+            ffmpeg
+            .input(self.filename)
+            .output(output_pattern, start_number=0)  # Output frame pattern
+            .run(cmd=ffmpeg_path)
+        )
+
+    def decode(self):
+
+        self.extract_frames()
+
+        no_of_frames = len(os.listdir("frames"))
+        bits =""
+        binary_bytes=[]
+
+        for frame in range(no_of_frames):
+            x,y = 0,0
+            image = Image.open(f"out/frame_{frame}.png")
+            width, height = image.size
+            pixels = image.load()
+            print(f"decoding frame:{frame}")
+
+            #pixels = image.getdata() # experiment with this once (see pillow docs)
+            #print(image.size)
+            for x in range(width):
+                for y in range(height):
+
+                    pix = pixels[(x,y)]
+                    if tuple(pix) == red:
+                        print(f"reached end of file at:x:{x},y:{y}")
+                        #print(pix,end="")
+                        #binary_bytes=[int(bits[i:i+8], 2) for i in range(0, len(bits), 8)]
+                        for i in range(0,len(bits),8):
+                            curr_bit = int(bits[i:i+8],2)
+                            binary_bytes.append(curr_bit) # type: ignore
+                        binary_bytes = bytes(binary_bytes)
+                        with open("big_out.pdf", "wb") as file:
+                            file.write(binary_bytes)
+
+
+                    else:
+                        if pix == one:
+                            bits+='1'
+                        elif pix==zero:
+                            bits+='0'
+                        #print(pix,end="")
+        
+        
+    
+    
+
+# enc1= Encoder("bigc.pdf")
+# print(enc1.size)
+# print(enc1.filename)
+# print(enc1.fileout)
+# print(enc1.fps)
+# #print(enc1.ripped_bytes)
+# enc1.encode()
+# print(f"end pixels are{enc1.end_pixels}")
+
+dec1 = Decoder("bigc_pdf_.avi")
+print(eval(dec1.metadata["streams"][0]["r_frame_rate"]))
+print(dec1.fileout)
