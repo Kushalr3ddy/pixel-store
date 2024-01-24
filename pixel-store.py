@@ -1,5 +1,3 @@
-from ast import Tuple
-from fileinput import filename
 from PIL import Image
 
 import os
