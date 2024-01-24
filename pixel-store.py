@@ -18,8 +18,6 @@ blue = (0, 0, 255)  # ignore this for now
 one=(0,0,0)
 zero = (255,255,255)
 
-# this is for storing all the images (frames) that are created as a result of converting bits to pixels
-frame_store ="frames"
 
 #separate classes for encoder object and decoder object
 class Encoder:
@@ -88,11 +86,12 @@ class Encoder:
         count = 0
         last_frame =0
         
-        
+        # this is for storing all the images (frames) that are created as a result of converting bits to pixels
+        png_folder ="frames"
 
         # create the folder if it doesnt exist
-        if not os.path.exists(frame_store):
-            os.mkdir(frame_store)
+        if not os.path.exists(png_folder):
+            os.mkdir(png_folder)
         
         content=''.join(self.ripped_bytes)#.replace('\n','')
         image = Image.new('RGB', (width, height), color='white')
@@ -135,7 +134,7 @@ class Encoder:
                     count+=1
 
             #image.save(f'data/encoded{frame}.png')
-            image.save(os.path.join(frame_store,f"frame{frame}.png"))
+            image.save(os.path.join(png_folder,f"frame{frame}.png"))
                 
         #check where the bits end
         if self.end_y < height:
@@ -147,14 +146,14 @@ class Encoder:
         #put the red pixel after the last bit encoded to indicate the end bit
         image.putpixel((self.end_x, self.end_y), red)
         #image.save(f'data/encoded{last_frame}.png')
-        image.save(os.path.join(frame_store,f"frame{last_frame}.png"))
+        image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
         
         
         ####below this line is the ffmpeg encoder stuff
 
 
         #image = Image.new
-        input_pattern = os.path.join(frame_store,"frame%d.png")
+        input_pattern = os.path.join(png_folder,"frame%d.png")
         output_video = self.fileout
         (
         ffmpeg
@@ -201,10 +200,10 @@ class Decoder:
     
     def extract_frames(self):
         #output pattern to take the video and convert to frames
-        if not os.path.exists(frame_store):
-            os.mkdir(frame_store)
+        if not os.path.exists("frames"):
+            os.mkdir("frames")
         
-        output_pattern = os.path.join(frame_store,"frame%d.png")
+        output_pattern = os.path.join("frames","frame%d.png")
         (
             ffmpeg
             .input(self.filename)
@@ -216,14 +215,13 @@ class Decoder:
 
         self.extract_frames()
 
-        no_of_frames = len(os.listdir(frame_store))
+        no_of_frames = len(os.listdir("frames"))
         bits =""
         binary_bytes=[]
 
         for frame in range(no_of_frames):
             x,y = 0,0
-            curr_frame = os.path.join(frame_store,f"frame{frame}.png")
-            image = Image.open(curr_frame)
+            image = Image.open(f"out/frame_{frame}.png")
             width, height = image.size
             pixels = image.load()
             print(f"decoding frame:{frame}")
@@ -242,7 +240,7 @@ class Decoder:
                             curr_bit = int(bits[i:i+8],2)
                             binary_bytes.append(curr_bit) # type: ignore
                         binary_bytes = bytes(binary_bytes)
-                        with open(self.fileout, "wb") as file:
+                        with open("big_out.pdf", "wb") as file:
                             file.write(binary_bytes)
 
 
@@ -269,4 +267,3 @@ class Decoder:
 dec1 = Decoder("bigc_pdf_.avi")
 print(eval(dec1.metadata["streams"][0]["r_frame_rate"]))
 print(dec1.fileout)
-dec1.decode()
