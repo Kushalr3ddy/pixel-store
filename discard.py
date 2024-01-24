@@ -1,11 +1,8 @@
 from PIL import Image
 
 
-image = Image.open("test.png")
+def function(**kwargs):
+    print(next(kwargs))
 
-pixels = image.load()
-
-for x in range(640):
-    for y in range(480):
-        print(pixels[x,y])
-
+dict1 ={1:"niga",2:"toni"}
+function(dict1)
