@@ -253,15 +253,15 @@ class Decoder:
     
     
 
-# enc1= Encoder("bigc.pdf")
-# print(enc1.size)
-# print(enc1.filename)
-# print(enc1.fileout)
-# print(enc1.fps)
-# #print(enc1.ripped_bytes)
-# enc1.encode()
-# print(f"end pixels are{enc1.end_pixels}")
-
-dec1 = Decoder("bigc_pdf_.avi")
-print(eval(dec1.metadata["streams"][0]["r_frame_rate"]))
-print(dec1.fileout)
+if __name__ == '__main__':
+    # enc1= Encoder("bigc.pdf")
+    # print(enc1.size)
+    # print(enc1.filename)
+    # print(enc1.fileout)
+    # print(enc1.fps)
+    # #print(enc1.ripped_bytes)
+    # enc1.encode()
+    # print(f"end pixels are{enc1.end_pixels}")
+    dec1 = Decoder("bigc_pdf_.avi")
+    print(eval(dec1.metadata["streams"][0]["r_frame_rate"]))
+    print(dec1.fileout)
