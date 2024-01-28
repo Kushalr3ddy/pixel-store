@@ -1,4 +1,5 @@
 from PIL import Image
+import os
 
 # Define image resolution
 width, height = 640, 480
@@ -23,6 +24,10 @@ zero = (255,255,255)
 #file = open("padded_bytes.txt","r")
 file = open("big_bits.txt","r")
 
+if not os.path.exists("data"):
+    os.mkdir("data")    
+
+png_folder ="data"
 
 
 #starting pixels
@@ -85,7 +90,7 @@ for frame in range(no_of_frames):
             end_y=y
             count+=1
 
-    image.save(f'data/encoded{frame}.png')
+    image.save(os.path.join("data",f"encoded{frame}.png"))
 
 print(f"frame:{frame},x:{x},y:{y}")
     
