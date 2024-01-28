@@ -10,11 +10,19 @@ load_dotenv()
 ffmpeg_path = os.getenv("ffmpeg")
 ffprobe_path = os.getenv("ffprobe")
 
+
 #pixel colors
 red=(255,0,0)
 blue = (0, 0, 255)  # ignore this for now
 one=(0,0,0)
 zero = (255,255,255)
+
+# resolutions
+res_240p ={"width":426,"height":240,"total_pixels":426*240}
+res_360p ={"width":426,"height":360,"total_pixels":426*360}
+res_480p ={"width":426,"height":240,"total_pixels":426*240}
+res_720p ={"width":426,"height":240,"total_pixels":426*240}
+res_1080p ={"width":426,"height":240,"total_pixels":426*240}
 
 
 #separate classes for encoder object and decoder object

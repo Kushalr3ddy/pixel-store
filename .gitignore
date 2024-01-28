@@ -24,3 +24,5 @@ ffmpeg_build/
 test/
 oops_test.py
 frames/
+__pycache__/
+.venv

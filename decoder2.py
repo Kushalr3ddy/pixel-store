@@ -16,7 +16,7 @@ class endoffile(Exception):
         self.description =description
         self.message = message
 """
-no_of_frames = len(glob.glob1("out/","*.png"))
+no_of_frames = len(glob.glob1("data/","*.png"))
 
 print(no_of_frames)
 #exit(0)
@@ -28,27 +28,30 @@ binary_bytes=[]
 
 for frame in range(no_of_frames):
     x,y = 0,0
-    image = Image.open(f"out/frame_{frame}.png")
+    image = Image.open(f"data/encoded{frame}.png")
     width, height = image.size
     pixels = image.load()
     print(f"decoding frame:{frame}")
     
     #pixels = image.getdata() # experiment with this once (see pillow docs)
     #print(image.size)
-    for x in range(width):
-        for y in range(height):
+    for x in range(0,width,2):
+        for y in range(0,height,2):
             
             pix = pixels[(x,y)]
             if tuple(pix) == red_color:
                 print(f"reached end of file at:x:{x},y:{y}")
+                print(f"len of bits:{len(bits)}")
                 #print(pix,end="")
                 #binary_bytes=[int(bits[i:i+8], 2) for i in range(0, len(bits), 8)]
                 for i in range(0,len(bits),8):
                     curr_bit = int(bits[i:i+8],2)
-                    binary_bytes.append(curr_bit) #type: ignore
+                    binary_bytes.append(curr_bit) # type: ignore
                 binary_bytes = bytes(binary_bytes)
                 with open("big_out.pdf", "wb") as file:
                     file.write(binary_bytes)
+                    print("done writing bytes")
+                    exit(0)
 
 
             else:
