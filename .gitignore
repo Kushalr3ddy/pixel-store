@@ -19,3 +19,8 @@ video_decoder.py
 *.mp4
 *.avi
 out/
+.env
+__pycache__/
+frames/
+oops_test.py
+test/
