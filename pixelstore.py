@@ -48,7 +48,7 @@ class Encoder:
     """
     def __init__(self,filename,fps=1):
         self.filename = filename
-        self.size = len(self.ripped_bytes) *8 # size of file in no of bits
+        self.size = len(self.ripped_bytes) *8 # size of file in no of bits where total_bits = total_bytes*8
         #self.fileout =fileout
         self.fps = fps
         

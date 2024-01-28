@@ -22,7 +22,8 @@ one=(0,0,0)
 zero = (255,255,255)
 
 #file = open("padded_bytes.txt","r")
-file = open("big_bits.txt","r")
+#read the file containing raw bit data as strings and remove the newline characters
+file = open("bigc.pdf","rb")
 
 if not os.path.exists("data"):
     os.mkdir("data")    
@@ -39,10 +40,28 @@ total_pixels = 640*480
 # 640x480 width x height
 
 
-#read the file containing raw bit data as strings and remove the newline characters
-content=file.read().replace('\n','')
 
+        
+raw_bytes =file.read(1)
+bit_sequence = []
+padded_bytes=[]
+count =0
+while raw_bytes:
+    curr_byte = bin(int.from_bytes(raw_bytes,byteorder="big"))
+    curr_byte = curr_byte[2:]
+    if len(curr_byte) < 8:
+        # fill up the lsb so if a byte is 1010 it will become 00001010
+        # this is done so it becomes 8 bits ie one whole byte for easy parsing later on
+        curr_byte = curr_byte.zfill(8)
+        padded_bytes.append(count)
+    #print((curr_byte))#,end=" ")
+    raw_bytes = file.read(1)
+    bit_sequence.append(curr_byte)
+    count+=1
+
+content=''.join(bit_sequence)#.replace('\n','')
 print(len(content))
+#exit(0)
 
 # to determine the end pixel
 end_x=0
@@ -50,7 +69,7 @@ end_y=0
 #exit(0)
 
 if len(content) > total_pixels:
-    no_of_frames = int((len(content)/total_pixels)+1)*4
+    no_of_frames = int((len(content)/total_pixels)*4)+1
 
 print(f"no of frames required:{no_of_frames}")
 #exit(0)
