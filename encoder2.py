@@ -114,7 +114,7 @@ for frame in range(no_of_frames):
 print(f"frame:{frame},x:{x},y:{y}")
     
 if end_y < height:
-    end_y+=1
+    end_y+=2
 else:
     end_x+=1
     end_y=0
@@ -124,7 +124,7 @@ image.putpixel((end_x+1, end_y), red_color)
 image.putpixel((end_x, end_y+1), red_color)
 image.putpixel((end_x+1, end_y+1), red_color)
 
-image.save(f'data/encoded{frame}.png')
+image.save(os.path.join("data",f"encoded{frame}.png"))
 print()
 #a red pixel is put to indicate the end of data
 print(f"last pixels are x:{end_x},y:{end_y}")

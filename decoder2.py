@@ -1,6 +1,7 @@
 from PIL import Image
 import glob
 
+import os
 #image = Image.open("encoded.png")
 
 
@@ -16,7 +17,7 @@ class endoffile(Exception):
         self.description =description
         self.message = message
 """
-no_of_frames = len(glob.glob1("data/","*.png"))
+no_of_frames = len([x.endswith(".png") for x in os.listdir("data") if x])
 
 print(no_of_frames)
 #exit(0)
@@ -28,7 +29,7 @@ binary_bytes=[]
 
 for frame in range(no_of_frames):
     x,y = 0,0
-    image = Image.open(f"data/encoded{frame}.png")
+    image = Image.open(os.path.join("data",f"encoded{frame}.png"))
     width, height = image.size
     pixels = image.load()
     print(f"decoding frame:{frame}")
