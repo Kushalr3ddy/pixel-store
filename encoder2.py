@@ -57,7 +57,7 @@ while raw_bytes:
     #print((curr_byte))#,end=" ")
     raw_bytes = file.read(1)
     bit_sequence.append(curr_byte)
-    count+=1
+    
 
 content=''.join(bit_sequence)#.replace('\n','')
 print(len(content))
@@ -69,47 +69,32 @@ end_y=0
 #exit(0)
 
 if len(content) > total_pixels:
-    no_of_frames = int((len(content)/total_pixels)*4)+1
+    no_of_frames = int((len(content)*4/total_pixels))
 
 print(f"no of frames required:{no_of_frames}")
 #exit(0)
-
-for frame in range(no_of_frames):
-    # this works and prints only 75 frames cause the frame value starts from 0 ;so 0 to 75 total 76 frames
-    if count >= len(content):
-            print("reached end of data bits")
-            break
+pix_count=0
+frame=0
+for bit in bit_sequence:
+    if pix_count == total_pixels:
+        image.save(os.path.join("data",f"encoded{frame}.png"))
+        frame+=1
+        
+    for curr_bit in bit:
+        if y>=height:
+            x+=1
+            y=0
+        pixel_color = one if curr_bit == 1 else zero
     
-    print(f"encoding frame :{frame}" )
-    for x in range(0,width,2):
-        if count >= len(content):
-                print("reached end of data bits")
-                break
+        for i in range(2):
+            for j in range(2):
+                image.putpixel((x+j, y+i), pixel_color)
 
-        for y in range(0,height,2):
-            if count >= len(content):
-                print("reached end of data bits")
-                break
-            
-            curr_bit = content[count]
+        pix_count+=4
+        y+=1
+    end_x=x
+    end_y=y
 
-            pixel_color = zero if curr_bit == '0' else one
-            
-            """
-            image.putpixel((x, y), pixel_color)
-            image.putpixel((x+1, y), pixel_color)
-            image.putpixel((x, y+1), pixel_color)
-            image.putpixel((x+1, y+1), pixel_color)
-            """
-            for i in range(2):
-                for j in range(2):
-                    image.putpixel((x+j, y+i), pixel_color)
-
-            end_x=x
-            end_y=y
-            count+=1
-
-    image.save(os.path.join("data",f"encoded{frame}.png"))
 
 print(f"frame:{frame},x:{x},y:{y}")
     

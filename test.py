@@ -1,15 +1,25 @@
-from PIL import Image
 
-width, height = 640, 480
+file = open("bigc.pdf","rb")
 
 
-# Create a new image with a white background
-image = Image.new('RGB', (width, height), color='white')
-x,y=0,0
+raw_bytes =file.read(1)
+bit_sequence = []
+padded_bytes=[]
+count =0
+while raw_bytes:
+    curr_byte = bin(int.from_bytes(raw_bytes,byteorder="big"))
+    curr_byte = curr_byte[2:]
+    if len(curr_byte) < 8:
+        # fill up the lsb so if a byte is 1010 it will become 00001010
+        # this is done so it becomes 8 bits ie one whole byte for easy parsing later on
+        curr_byte = curr_byte.zfill(8)
+        padded_bytes.append(count)
+    #print((curr_byte))#,end=" ")
+    raw_bytes = file.read(1)
+    bit_sequence.append(curr_byte)
+    count+=1
 
-blue_color =(0,0,255)
-red_color =(255,0,0)
-
-image.putpixel((x, y), blue_color)
-image.putpixel((1, 0), red_color)
-image.save('test.png')
+for i in bit_sequence:
+    for j in i:
+        print(j,end=" ")
+    print()
