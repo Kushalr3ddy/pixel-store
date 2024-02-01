@@ -67,33 +67,37 @@ print(len(content))
 end_x=0
 end_y=0
 #exit(0)
-
 if len(content) > total_pixels:
     no_of_frames = int((len(content)*4/total_pixels))
 
 print(f"no of frames required:{no_of_frames}")
 #exit(0)
-pix_count=0
-frame=0
-for bit in bit_sequence:
-    if pix_count == total_pixels:
-        image.save(os.path.join("data",f"encoded{frame}.png"))
-        frame+=1
-        
-    for curr_bit in bit:
-        if y>=height:
-            x+=1
-            y=0
-        pixel_color = one if curr_bit == 1 else zero
-    
-        for i in range(2):
-            for j in range(2):
-                image.putpixel((x+j, y+i), pixel_color)
 
-        pix_count+=4
-        y+=1
-    end_x=x
-    end_y=y
+count=0
+for frame in range(no_of_frames):
+    if count == len(content):
+        break
+    print(f"encoding frame:{frame}")
+    image = Image.new("RGB",(width,height),color="white")
+    for x in range(0,width,2):
+        if count == len(content):
+            break
+        for y in range(0,height,2):
+            if count == len(content):
+                break
+            
+            curr_bit = content[count]
+            pix_color = one if curr_bit =='1' else zero
+            for i in range(2):
+                for j in range(2):
+                    image.putpixel((x+j,y+i),pix_color)
+
+            count+=1
+
+    image.save(os.path.join(png_folder,f"encoded{frame}.png"))
+
+end_x=x
+end_y=y
 
 
 print(f"frame:{frame},x:{x},y:{y}")
@@ -103,6 +107,7 @@ if end_y < height:
 else:
     end_x+=1
     end_y=0
+
 
 image.putpixel((end_x, end_y), red_color)
 image.putpixel((end_x+1, end_y), red_color)
