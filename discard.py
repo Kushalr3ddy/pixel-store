@@ -1,10 +1,10 @@
 from PIL import Image
 
 
-image = Image.open("data/encoded265.png")
+image = Image.open("data/encoded302.png")
 
 pixels = image.load()
 
-red = pixels[(212,274)]
+red = pixels[(62,178)]
 
 print(red)

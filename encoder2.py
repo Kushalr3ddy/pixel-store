@@ -68,7 +68,7 @@ end_x=0
 end_y=0
 #exit(0)
 if len(content) > total_pixels:
-    no_of_frames = int((len(content)*4/total_pixels))
+    no_of_frames = int((len(content)*4/total_pixels))+1
 
 print(f"no of frames required:{no_of_frames}")
 #exit(0)
@@ -88,9 +88,15 @@ for frame in range(no_of_frames):
             
             curr_bit = content[count]
             pix_color = one if curr_bit =='1' else zero
+            """
             for i in range(2):
                 for j in range(2):
                     image.putpixel((x+j,y+i),pix_color)
+            """
+            image.putpixel((x,y),pix_color)
+            image.putpixel((x+1,y),pix_color)
+            image.putpixel((x,y+1),pix_color)
+            image.putpixel((x+1,y+1),pix_color)
 
             count+=1
 
@@ -104,7 +110,7 @@ print(f"frame:{frame},x:{x},y:{y}")
     
 if end_y < height:
     end_y+=2
-else:
+elif end_y >= height:
     end_x+=1
     end_y=0
 
