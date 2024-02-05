@@ -105,12 +105,13 @@ for frame in range(no_of_frames):
 end_x=x
 end_y=y
 
-
+#print(f"end frame:{frame}\nend pixels are x:{end_x}y:{end_y}")
+#exit(0)
 print(f"frame:{frame},x:{x},y:{y}")
     
-if end_y < height:
+if end_y+2 < height:
     end_y+=2
-elif end_y >= height:
+else:
     end_x+=1
     end_y=0
 

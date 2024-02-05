@@ -44,7 +44,7 @@ for frame in range(no_of_frames):
     pixels = image.load()
     print(f"decoding frame:{frame}")
     
-    #pixels = image.getdata() # experiment with this once (see pillow docs)
+    
     #print(image.size)
     for x in range(0,width,2):
         for y in range(0,height,2):
