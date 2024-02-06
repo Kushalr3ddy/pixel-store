@@ -74,6 +74,8 @@ print(f"no of frames required:{no_of_frames}")
 #exit(0)
 
 count=0
+end_x=0
+end_y=0
 for frame in range(no_of_frames):
     if count == len(content):
         break
@@ -99,11 +101,15 @@ for frame in range(no_of_frames):
             image.putpixel((x+1,y+1),pix_color)
 
             count+=1
+            end_x=x
+            end_y=y
+
 
     image.save(os.path.join(png_folder,f"encoded{frame}.png"))
-
-end_x=x
-end_y=y
+#print(f"x:{x} y:{y}")
+#exit(0)
+#end_x=x
+#end_y=y
 
 #print(f"end frame:{frame}\nend pixels are x:{end_x}y:{end_y}")
 #exit(0)

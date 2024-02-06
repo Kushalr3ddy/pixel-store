@@ -11,14 +11,14 @@ print(ffmpeg_path)
 #exit(0)
 #NOTE: this requires having ffmpeg installed
 # Path to the folder containing PNG files
-png_folder = 'data/'
+png_folder = 'data'
 
 if not os.path.exists(png_folder):
     os.mkdir(png_folder)
 
 
 # Input PNG file pattern
-input_pattern = png_folder + 'encoded%d.png'
+input_pattern = os.path.join(png_folder ,'encoded%d.png')
 
 # Output video file name
 output_video = 'output_video.avi'
@@ -26,7 +26,7 @@ output_video = 'output_video.avi'
 # Create a video using ffmpeg with Lagarith codec
 (
     ffmpeg
-    .input(input_pattern, framerate=1)  # Set frame rate
+    .input(input_pattern, framerate=6)  # Set frame rate
     .output(output_video, vcodec='huffyuv', pix_fmt='rgb24')  # Lagarith codec with RGB24 pixel format
     .run(cmd=ffmpeg_path)
 )

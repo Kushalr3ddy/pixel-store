@@ -27,3 +27,4 @@ frames/
 __pycache__/
 .venv
 venv/
+downloadtest.py

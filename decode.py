@@ -7,7 +7,8 @@ import glob
 white =(0,0,0)
 black =(255,255,255)
 red_color =(255,0,0)
-
+one=(0,0,0)
+zero = (255,255,255)
 #define custom exception for reaching end of file
 #ignore this for noe 
 """

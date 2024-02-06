@@ -9,10 +9,11 @@ print(ffmpeg_path)
 
 #exit(0)
 # Input video file
-input_video = 'output_video.avi'
+#input_video = 'output_video.avi'
+input_video = 'videoplayback.mp4'
 
 # Output folder for extracted frames
-output_folder = 'out/'
+output_folder = 'out'
 if not os.path.exists(output_folder):
     os.mkdir(output_folder)
 
@@ -24,6 +25,6 @@ if not os.path.exists(output_folder):
 (
     ffmpeg
     .input(input_video)
-    .output(output_folder+'frame_%d.png', start_number=0)  # Output frame pattern
-    .run(cmd=ffmpeg_path)
+    .output(os.path.join(output_folder,'frame_%d.png'), start_number=0)  # Output frame pattern
+    .run(cmd=ffmpeg_path,overwrite_output=True)
 )
