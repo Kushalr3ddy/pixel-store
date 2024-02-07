@@ -27,8 +27,8 @@ out = "out"
 if not os.path.exists("frames"):
     os.mkdir("frames")
     
-frames = "data" #from raw frames
-#frames = "out" # from video frames
+#frames = "data" #from raw frames
+frames = "out" # from video frames
 no_of_frames = len([x.endswith(".png") for x in os.listdir(frames) if x])
 
 print(no_of_frames)
@@ -42,8 +42,8 @@ binary_bytes=[]
 
 for frame in range(no_of_frames):
     x,y = 0,0
-    image = Image.open(os.path.join(frames,f"encoded{frame}.png"))
-    #image = Image.open(os.path.join(frames,f"frame_{frame}.png"))
+    #image = Image.open(os.path.join(frames,f"encoded{frame}.png"))
+    image = Image.open(os.path.join(frames,f"frame_{frame}.png"))
     width, height = image.size
     pixels = image.load()
     print(f"decoding frame:{frame}")
@@ -62,9 +62,9 @@ for frame in range(no_of_frames):
             pix/=4
             pix = int(pix)
             
-            if pix == 85:
+            #if pix == 85 and frame == no_of_frames-1:
             #if pix == 108: #after downloading from youtube pixel color changes
-            #if pix == 108 and frame ==302: #after downloading from youtube pixel color changes
+            if pix == 108 and frame ==no_of_frames-1: #after downloading from youtube pixel color changes
             #if pix == red_color:
             
                 print(f"reached end of file at:x:{x},y:{y}")

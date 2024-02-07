@@ -7,8 +7,17 @@ import ffmpeg
 import json
 #getting the path of ffmpeg binary
 load_dotenv()
-ffmpeg_path = os.getenv("ffmpeg")
-ffprobe_path = os.getenv("ffprobe")
+if os.environ.get('ffmpeg') is not None:
+    ffmpeg_path = os.getenv("ffmpeg")
+else:
+    print("ffmpeg path not found please install ffmpeg and add to environment variable")
+    exit(0)
+
+if os.environ.get('ffprobe') is not None:
+    ffprobe_path = os.getenv("ffprobe")
+else:
+    print("ffprobe path not found please install ffmpeg and add to environment variable")
+    exit(0)    
 
 
 #pixel colors
