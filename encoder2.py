@@ -121,7 +121,7 @@ print(f"frame:{frame},x:{x},y:{y}")
 if end_y+2 < height:
     end_y+=2
 else:
-    end_x+=1
+    end_x+=2
     end_y=0
 
 
