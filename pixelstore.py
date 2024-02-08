@@ -11,6 +11,7 @@ if os.environ.get('ffmpeg') is not None:
     ffmpeg_path = os.getenv("ffmpeg")
 else:
     print("ffmpeg path not found please install ffmpeg and add to environment variable")
+    print("or create a .env and add a ffmpeg variable with value of the path to the ffmpeg binary")
     exit(0)
 
 if os.environ.get('ffprobe') is not None:
