@@ -7,8 +7,8 @@ width, height = 640, 480
 
 
 # create a new image with a white background
-#image = Image.new('RGB', (width, height), color='white')
-image = Image.new('RGB', (width, height), color='black')
+image = Image.new('RGB', (width, height), color='white')
+
 
 width, height = image.size
 #x,y coordinates
@@ -82,8 +82,8 @@ for frame in range(no_of_frames):
     if count == len(content):
         break
     print(f"encoding frame:{frame}")
-    #image = Image.new("RGB",(width,height),color="white")
-    image = Image.new("RGB",(width,height),color="black")
+    image = Image.new("RGB",(width,height),color="white")
+    
     for x in range(0,width,2):
         if count == len(content):
             break
