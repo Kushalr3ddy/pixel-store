@@ -10,7 +10,9 @@ print(ffmpeg_path)
 #exit(0)
 # Input video file
 #input_video = 'output_video.avi'
-input_video = 'videoplayback.mp4'
+
+input_video = 'output video.mp4'
+#input_video = 'videoplayback.mp4'
 
 # Output folder for extracted frames
 output_folder = 'out'

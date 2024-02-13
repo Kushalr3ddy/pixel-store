@@ -27,7 +27,7 @@ output_video = 'output_video.avi'
 (
     ffmpeg
     .input(input_pattern, framerate=6)  # Set frame rate
-    .output(output_video, vcodec='huffyuv', pix_fmt='rgb24')  # Lagarith codec with RGB24 pixel format
+    .output(output_video, vcodec='huffyuv', pix_fmt='rgb24',bitrate ="3000k")  # Lagarith codec with RGB24 pixel format
     .run(cmd=ffmpeg_path)
 )
 

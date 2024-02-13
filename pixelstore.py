@@ -1,16 +1,17 @@
 from PIL import Image
-
 import os
+
 import json
 from dotenv import load_dotenv
 import ffmpeg
 import json
-#getting the path of ffmpeg binary
+import math
+#getting the path of ffmpeg binary if its added using .env file
 load_dotenv()
 if os.environ.get('ffmpeg') is not None:
     ffmpeg_path = os.getenv("ffmpeg")
 else:
-    print("ffmpeg path not found please install ffmpeg and add to environment variable")
+    print("ffmpeg path not found please install ffmpeg binaries and add to environment variable or a .env file")
     print("or create a .env and add a ffmpeg variable with value of the path to the ffmpeg binary")
     exit(0)
 
@@ -56,17 +57,23 @@ class Encoder:
 
         
     """
-    def __init__(self,filename,fps=1):
+    def __init__(self,filename,fps=6,pix_size=4,res=res_480p):
         self.filename = filename
+        self.ripped_bytes = self.rip_bytes() # size of file in no of bits where total_bits = total_bytes*8
         self.size = len(self.ripped_bytes) *8 # size of file in no of bits where total_bits = total_bytes*8
         #self.fileout =fileout
         self.fps = fps
+        self.pix_size = pix_size # make sure the pix_sizes are only squares i.e 4,9,16....
+        self.res = res
+        #below are the coordinate of the end pixel after the content bits are finished
+        self.end_x =0
+        self.end_y =0
         
         
-    @property
-    def ripped_bytes(self):
+    
+    def rip_bytes(self):
         file = open(self.filename,"rb")
-        
+        print(f"reading bytes from:{file.name}")
         raw_bytes =file.read(1)
         bit_sequence = []
         padded_bytes=[]
@@ -83,6 +90,7 @@ class Encoder:
             raw_bytes = file.read(1)
             bit_sequence.append(curr_byte)
             count+=1
+        file.close()
         return bit_sequence
     
     @property
@@ -90,19 +98,29 @@ class Encoder:
         filename = os.path.splitext(self.filename)
         file_name = filename[0] # get the name of the file
         extension = filename[1] # get the extenstion of file (txt,pdf,docx,etc.)
-
-        return file_name +"_"+ extension.strip(".") +"_"+".avi"
+        #filename_ext_pixsize_.avi
+        return file_name +"_"+ extension.strip(".") +"_"+ self.pix_size  +"_"+".avi"
         
+
 
     def encode(self):
+
+        if not os.path.exists("output"):
+            os.mkdir("output")
+
         
         no_of_frames = 1
-        width, height = 640,480 # test with 480p for now later add other resolutions
+        
+        # test with 480p for now later add other resolutions
+        width = self.res["width"]
+        height = self.res["height"]
+
         total_pixels = width * height
         x,y = 0,0
         count = 0
         last_frame =0
         
+        pix_size = int(math.sqrt(self.pix_size))
         # this is for storing all the images (frames) that are created as a result of converting bits to pixels
         png_folder ="frames"
 
@@ -114,9 +132,11 @@ class Encoder:
         image = Image.new('RGB', (width, height), color='white')
         
         #determine the no of frames 
+        #if len(content) > total_pixels:
+        #    no_of_frames = int((len(content)/total_pixels)+1)
         if len(content) > total_pixels:
-            no_of_frames = int((len(content)/total_pixels)+1)
-        
+            no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
+
         #print(f"no of frames required:{no_of_frames}")
         for frame in range(no_of_frames):
             last_frame=frame
@@ -128,40 +148,41 @@ class Encoder:
                     print("reached end of data bits")
                     break
                 
-            print(f"encoding frame :{frame}" )
-            for x in range(width):
+            print(f"encoding frame :{frame} of {no_of_frames-1}",end="\r" )
+            for x in range(0,width,pix_size):
                 if count == len(content):
-                        print("reached end of data bits")
+                    break
+                for y in range(0,height,pix_size):
+                    if count == len(content):
                         break
                     
-                for y in range(height):
-                    if count == len(content):
-                        print("reached end of data bits")
-                        break
+                    curr_bit = content[count]
+                    pix_color = one if curr_bit =='1' else zero
+                    
+                    for i in range(pix_size):
+                        for j in range(pix_size):
+                            image.putpixel((x+j,y+i),pix_color)
+                    
                     
 
-                    curr_bit = content[count]
-                    if curr_bit == '0':
-                        image.putpixel((x, y), zero)
-                    if curr_bit == '1':
-                    
-                        image.putpixel((x, y), one)
+                    count+=1
                     self.end_x=x
                     self.end_y=y
-                    count+=1
 
             #image.save(f'data/encoded{frame}.png')
             image.save(os.path.join(png_folder,f"frame{frame}.png"))
                 
         #check where the bits end
-        if self.end_y < height:
-            self.end_y+=1
+        if self.end_y+pix_size < height:
+            self.end_y+=pix_size
         else:
             self.end_x+=1
             self.end_y=0
         
         #put the red pixel after the last bit encoded to indicate the end bit
-        image.putpixel((self.end_x, self.end_y), red)
+        for i in range(pix_size):
+            for j in range(pix_size):
+                image.putpixel((self.end_x+j, self.end_y+i), red)
         #image.save(f'data/encoded{last_frame}.png')
         image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
         
@@ -171,7 +192,7 @@ class Encoder:
 
         #image = Image.new
         input_pattern = os.path.join(png_folder,"frame%d.png")
-        output_video = self.fileout
+        output_video = os.path.join("output",self.fileout)
         (
         ffmpeg
         .input(input_pattern,framerate = self.fps)
@@ -179,11 +200,9 @@ class Encoder:
         .overwrite_output()
         .run(cmd=ffmpeg_path)
         )
-        print(f"done encoding to video :{self.fileout}")
+        print(f"done encoding to video :output/{self.fileout}")
     
-    @property
-    def end_pixels(self):
-        return (self.end_x,self.end_y) #convert this to json ?
+    
 
     @property
     def metadata(self):
@@ -196,6 +215,7 @@ class Encoder:
         """
         pass
 
+#############################################################################################################
 # the Decoder class below
 #
 class Decoder:
@@ -235,22 +255,37 @@ class Decoder:
         no_of_frames = len(os.listdir("frames"))
         bits =""
         binary_bytes=[]
+        #pix_size = int(math.sqrt(self.pixel_size)))
+        pix_size = 2
 
         for frame in range(no_of_frames):
             x,y = 0,0
-            image = Image.open(f"out/frame_{frame}.png")
+            image = Image.open(os.path.join("frames",f"frame_{frame}.png"))
             width, height = image.size
             pixels = image.load()
             print(f"decoding frame:{frame}")
 
             #pixels = image.getdata() # experiment with this once (see pillow docs)
             #print(image.size)
-            for x in range(width):
-                for y in range(height):
+                for x in range(0,width,pix_size):
+                    for y in range(0,height,pix_size):
+            
+                    pix=0
+                    for i in range(2):
+                        for j in range(2):
+                            curr_pix = pixels[(x+j,y+i)] # check the bit checker below if you want to change this
+                            pix += sum(curr_pix)/3
 
-                    pix = pixels[(x,y)]
-                    if tuple(pix) == red:
+                    pix/=4
+                    pix = int(pix)
+            
+                    #if pix == 85 and frame == no_of_frames-1:
+                    #if pix == 108: #after downloading from youtube pixel color changes
+                    if pix == 108 and frame ==no_of_frames-1: #after downloading from youtube pixel color changes
+                    #if pix == red_color:
+            
                         print(f"reached end of file at:x:{x},y:{y}")
+                        print(f"len of bits:{len(bits)}")
                         #print(pix,end="")
                         #binary_bytes=[int(bits[i:i+8], 2) for i in range(0, len(bits), 8)]
                         for i in range(0,len(bits),8):
@@ -259,28 +294,23 @@ class Decoder:
                         binary_bytes = bytes(binary_bytes)
                         with open("big_out.pdf", "wb") as file:
                             file.write(binary_bytes)
+                            print("done writing bytes")
+                            exit(0)
 
 
                     else:
-                        if pix == one:
+                        if pix <= 127:
+                        #if pix == one:
                             bits+='1'
-                        elif pix==zero:
+                        elif pix > 127:
+                        #elif pix == zero:
                             bits+='0'
                         #print(pix,end="")
+
         
         
     
     
 
 if __name__ == '__main__':
-    # enc1= Encoder("bigc.pdf")
-    # print(enc1.size)
-    # print(enc1.filename)
-    # print(enc1.fileout)
-    # print(enc1.fps)
-    # #print(enc1.ripped_bytes)
-    # enc1.encode()
-    # print(f"end pixels are{enc1.end_pixels}")
-    dec1 = Decoder("bigc_pdf_.avi")
-    print(eval(dec1.metadata["streams"][0]["r_frame_rate"]))
-    print(dec1.fileout)
+    pass

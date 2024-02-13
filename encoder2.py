@@ -1,12 +1,14 @@
 from PIL import Image
 import os
 
+import ffmpeg
 # Define image resolution
 width, height = 640, 480
 
 
 # create a new image with a white background
 image = Image.new('RGB', (width, height), color='white')
+
 
 width, height = image.size
 #x,y coordinates
@@ -81,6 +83,7 @@ for frame in range(no_of_frames):
         break
     print(f"encoding frame:{frame}")
     image = Image.new("RGB",(width,height),color="white")
+    
     for x in range(0,width,2):
         if count == len(content):
             break
@@ -118,7 +121,7 @@ print(f"frame:{frame},x:{x},y:{y}")
 if end_y+2 < height:
     end_y+=2
 else:
-    end_x+=1
+    end_x+=2
     end_y=0
 
 
@@ -140,3 +143,16 @@ print(f"no of pixels written:{count}")
 
 #create the image
 #image.save('encoded.png')
+input_pattern = os.path.join(png_folder ,'encoded%d.png')
+
+# Output video file name
+output_video = 'output_video.avi'
+
+# Create a video using ffmpeg with Lagarith codec
+(
+    ffmpeg
+    .input(input_pattern, framerate=6)  # Set frame rate
+    .output(output_video, vcodec='huffyuv', pix_fmt='rgb24',bitrate ="3000k")  # Lagarith codec with RGB24 pixel format
+    .run(cmd=ffmpeg_path)
+)
+
