@@ -2,9 +2,11 @@ from PIL import Image
 import os
 
 import ffmpeg
+
+#from pixelstore.resolutions import res_480p
 # Define image resolution
 width, height = 640, 480
-
+#width, height = 1280, 720
 
 # create a new image with a white background
 image = Image.new('RGB', (width, height), color='white')
@@ -36,7 +38,8 @@ png_folder ="data"
 #starting pixels
 x,y = 0,0
 count =0
-total_pixels = 640*480
+total_pixels = width*height
+pixel_size=2
 #total_bits = len(content)
 
 # 640x480 width x height
@@ -70,11 +73,15 @@ end_x=0
 end_y=0
 #exit(0)
 if len(content) > total_pixels:
-    no_of_frames = int((len(content)*4/total_pixels))+1
+    no_of_frames = int((len(content)*(pixel_size**2)/total_pixels))+1
 
 print(f"no of frames required:{no_of_frames}")
 #exit(0)
 
+def put_pix(image:Image,x,y,pix_color,pixel_size):
+    for i in range(pixel_size):
+        for j in range(pixel_size):
+            image.putpixel((x+j,y+i),pix_color)
 count=0
 end_x=0
 end_y=0
@@ -84,25 +91,26 @@ for frame in range(no_of_frames):
     print(f"encoding frame:{frame}")
     image = Image.new("RGB",(width,height),color="white")
     
-    for x in range(0,width,2):
+    for x in range(0,width,pixel_size):
         if count == len(content):
             break
-        for y in range(0,height,2):
+        for y in range(0,height,pixel_size):
             if count == len(content):
                 break
             
             curr_bit = content[count]
             pix_color = one if curr_bit =='1' else zero
-            """
-            for i in range(2):
-                for j in range(2):
-                    image.putpixel((x+j,y+i),pix_color)
+        
+            #for i in range(pixel_size):
+            #    for j in range(pixel_size):
+            #        image.putpixel((x+j,y+i),pix_color)
+            put_pix(image,x,y,pix_color,pixel_size)
             """
             image.putpixel((x,y),pix_color)
             image.putpixel((x+1,y),pix_color)
             image.putpixel((x,y+1),pix_color)
             image.putpixel((x+1,y+1),pix_color)
-
+            """
             count+=1
             end_x=x
             end_y=y
@@ -118,17 +126,17 @@ for frame in range(no_of_frames):
 #exit(0)
 print(f"frame:{frame},x:{x},y:{y}")
     
-if end_y+2 < height:
-    end_y+=2
+if end_y+pixel_size < height:
+    end_y+=pixel_size
 else:
-    end_x+=2
+    end_x+=pixel_size
     end_y=0
 
-
-image.putpixel((end_x, end_y), red_color)
-image.putpixel((end_x+1, end_y), red_color)
-image.putpixel((end_x, end_y+1), red_color)
-image.putpixel((end_x+1, end_y+1), red_color)
+put_pix(image,end_x,end_y,red_color,pixel_size)
+#image.putpixel((end_x, end_y), red_color)
+#image.putpixel((end_x+1, end_y), red_color)
+#image.putpixel((end_x, end_y+1), red_color)
+#image.putpixel((end_x+1, end_y+1), red_color)
 
 image.save(os.path.join("data",f"encoded{frame}.png"))
 print()
@@ -149,10 +157,5 @@ input_pattern = os.path.join(png_folder ,'encoded%d.png')
 output_video = 'output_video.avi'
 
 # Create a video using ffmpeg with Lagarith codec
-(
-    ffmpeg
-    .input(input_pattern, framerate=6)  # Set frame rate
-    .output(output_video, vcodec='huffyuv', pix_fmt='rgb24',bitrate ="3000k")  # Lagarith codec with RGB24 pixel format
-    .run(cmd=ffmpeg_path)
-)
+
 

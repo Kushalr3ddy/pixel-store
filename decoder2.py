@@ -40,7 +40,7 @@ bits = ""
 binary_bytes=[]
 
 
-for frame in range(no_of_frames):
+for frame in range(no_of_frames+1):
     x,y = 0,0
     image = Image.open(os.path.join(frames,f"encoded{frame}.png"))
     #image = Image.open(os.path.join(frames,f"frame_{frame}.png"))
@@ -62,7 +62,7 @@ for frame in range(no_of_frames):
             pix/=4
             pix = int(pix)
             
-            if pix == 85 and frame == no_of_frames-1:
+            if pix == 85 and frame == no_of_frames+1:
             #if pix == 108: #after downloading from youtube pixel color changes
             #if pix == 108 and frame ==no_of_frames-1: #after downloading from youtube pixel color changes
             #if pix == red_color:

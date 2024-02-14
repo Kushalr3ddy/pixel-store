@@ -1,20 +1,20 @@
-import cv2
+from PIL import Image
 import os
 
-import numpy as np
-import math
+import ffmpeg
+import cv2
+#from pixelstore.resolutions import res_480p
+# Define image resolution
+width, height = 640, 480
+#width, height = 1280, 720
+
+# create a new image with a white background
+image = Image.new('RGB', (width, height), color='white')
 
 
-
-
-# resolutions
-res_240p ={"width":426,"height":240,"total_pixels":426*240}
-res_360p ={"width":640,"height":360,"total_pixels":640*360}
-#res_480p ={"width":640,"height":480,"total_pixels":640*480}
-res_480p ={"width":854,"height":480,"total_pixels":854*480} # youtube recommended size for 480p
-res_720p ={"width":1280,"height":720,"total_pixels":1280*720}
-res_1080p ={"width":1920,"height":1080,"total_pixels":1920*1080}
-
+width, height = image.size
+#x,y coordinates
+#x, y = 100, 200
 
 # initially no of frames is 1 if the no of bits < no of pixels
 no_of_frames=1
@@ -22,8 +22,6 @@ no_of_frames=1
 #defining the pixels to represent colors 
 red_color =(255,0,0)
 blue_color = (0, 0, 255)  
-
-green_color=(0,255,0)
 one=(0,0,0)
 zero = (255,255,255)
 
@@ -37,12 +35,22 @@ if not os.path.exists("data"):
 png_folder ="data"
 
 
+#starting pixels
+x,y = 0,0
+count =0
+total_pixels = width*height
+pixel_size=2
+#total_bits = len(content)
+
+# 640x480 width x height
+
+
+
+        
 raw_bytes =file.read(1)
 bit_sequence = []
 padded_bytes=[]
 count =0
-
-
 while raw_bytes:
     curr_byte = bin(int.from_bytes(raw_bytes,byteorder="big"))
     curr_byte = curr_byte[2:]
@@ -58,38 +66,107 @@ while raw_bytes:
 
 content=''.join(bit_sequence)#.replace('\n','')
 print(len(content))
+#exit(0)
 
+# to determine the end pixel
+end_x=0
+end_y=0
+#exit(0)
+if len(content) > total_pixels:
+    no_of_frames = int((len(content)*(pixel_size**2)/total_pixels))+1
 
+print(f"no of frames required:{no_of_frames}")
+#exit(0)
 
-
-# Define the image width and height
-image_width = res_480p["width"]
-image_height = res_480p["height"]
-
-
-
-# Create a black image
-black_image = 255 * np.ones((image_height, image_width, 3), dtype=np.uint8)  # 3 channels (BGR)
-
-# set pixel values based on binary content
-index = 0
-pix_size=4 # make sure that these are square number i.e 4,9,16....
-pix_size =int(math.sqrt(pix_size))
-
-for y in range(0,image_height,pix_size):
-    for x in range(0,image_width,pix_size):
-        if content[index] == '1':
-            pix_color = [0, 0, 0]  # Set pixel to black
-        else:
-            pix_color = [255, 255, 255]  # Set pixel to white
+def put_pix(image:Image,x,y,pix_color,pixel_size):
+    for i in range(pixel_size):
+        for j in range(pixel_size):
+            image.putpixel((x+j,y+i),pix_color)
+count=0
+end_x=0
+end_y=0
+for frame in range(no_of_frames):
+    if count == len(content):
+        break
+    print(f"encoding frame:{frame}")
+    image = Image.new("RGB",(width,height),color="white")
+    
+    for x in range(0,width,pixel_size):
+        if count == len(content):
+            break
+        for y in range(0,height,pixel_size):
+            if count == len(content):
+                break
+            
+            curr_bit = content[count]
+            pix_color = one if curr_bit =='1' else zero
         
-        for i in range(pix_size):
-            for j in range(pix_size):
-                black_image[y+j, x+i] = pix_color
+            #for i in range(pixel_size):
+            #    for j in range(pixel_size):
+            #        image.putpixel((x+j,y+i),pix_color)
+            put_pix(image,x,y,pix_color,pixel_size)
+            """
+            image.putpixel((x,y),pix_color)
+            image.putpixel((x+1,y),pix_color)
+            image.putpixel((x,y+1),pix_color)
+            image.putpixel((x+1,y+1),pix_color)
+            """
+            count+=1
+            end_x=x
+            end_y=y
 
-        index += 1
 
-# Display the image
-cv2.imshow('Black and White Image', black_image)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    image.save(os.path.join(png_folder,f"encoded{frame}.png"))
+#print(f"x:{x} y:{y}")
+#exit(0)
+#end_x=x
+#end_y=y
+
+#print(f"end frame:{frame}\nend pixels are x:{end_x}y:{end_y}")
+#exit(0)
+print(f"frame:{frame},x:{x},y:{y}")
+    
+if end_y+pixel_size < height:
+    end_y+=pixel_size
+else:
+    end_x+=pixel_size
+    end_y=0
+
+put_pix(image,end_x,end_y,red_color,pixel_size)
+#image.putpixel((end_x, end_y), red_color)
+#image.putpixel((end_x+1, end_y), red_color)
+#image.putpixel((end_x, end_y+1), red_color)
+#image.putpixel((end_x+1, end_y+1), red_color)
+
+image.save(os.path.join("data",f"encoded{frame}.png"))
+print()
+#a red pixel is put to indicate the end of data
+print(f"last pixels are x:{end_x},y:{end_y}")
+print(f"no of pixels written:{count}")
+        
+
+        
+
+#image.putpixel((x+1, y), blue_color)
+
+#create the image
+#image.save('encoded.png')
+input_pattern = os.path.join(png_folder ,'encoded%d.png')
+
+# Output video file name
+output_video = 'output_video.mp4'
+
+# Create a video using opencv
+img_array = []
+for frame in range(no_of_frames):
+   img = cv2.imread(os.path.join(png_folder,f"encoded{frame}.png"))
+   height, width, layers = img.shape
+   size = (width,height)
+   img_array.append(img)
+
+out = cv2.VideoWriter(output_video,cv2.VideoWriter_fourcc(*'MP4V'), 6, size)
+
+for i in range(len(img_array)):
+   out.write(img_array[i])
+out.release()
+

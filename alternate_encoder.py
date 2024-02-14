@@ -4,8 +4,9 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-ffmpeg_path = os.getenv("ffmpeg")
-#ffmpeg_path = "C:\\Users\\pikki\\Desktop\\everything\\pixel-store\\ffmpeg_build\\bin\\ffmpeg.exe"
+#ffmpeg_path = os.getenv("ffmpeg")
+ffmpeg_path = "/usr/bin/ffmpeg"
+
 print(ffmpeg_path)
 #os.system(f"{os.getenv('ffmpeg')} -version")
 #exit(0)

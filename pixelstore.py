@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import ffmpeg
 import json
 import math
+import cv2
 #getting the path of ffmpeg binary if its added using .env file
 load_dotenv()
 if os.environ.get('ffmpeg') is not None:
@@ -28,13 +29,14 @@ blue = (0, 0, 255)  # ignore this for now
 one=(0,0,0)
 zero = (255,255,255)
 
-# resolutions
-res_240p ={"width":426,"height":240,"total_pixels":426*240}
-res_360p ={"width":640,"height":360,"total_pixels":640*360}
-res_480p ={"width":640,"height":480,"total_pixels":640*480}
-#res_480p ={"width":854,"height":480,"total_pixels":854*480} # youtube recommended size for 480p
-res_720p ={"width":1280,"height":720,"total_pixels":1280*720}
-res_1080p ={"width":1920,"height":1080,"total_pixels":1920*1080}
+# separate class for resolutions
+class resolutions:
+    res_240p ={"width":426,"height":240,"total_pixels":426*240}
+    res_360p ={"width":640,"height":360,"total_pixels":640*360}
+    res_480p ={"width":640,"height":480,"total_pixels":640*480}
+    #res_480p ={"width":854,"height":480,"total_pixels":854*480} # youtube recommended size for 480p
+    res_720p ={"width":1280,"height":720,"total_pixels":1280*720}
+    res_1080p ={"width":1920,"height":1080,"total_pixels":1920*1080}
 
 
 #separate classes for encoder object and decoder object
@@ -57,20 +59,23 @@ class Encoder:
 
         
     """
-    def __init__(self,filename,fps=6,pix_size=4,res=res_480p):
+    def __init__(self,filename,fps=6,pix_size=4,res=resolutions.res_480p,output_folder="data"):
         self.filename = filename
+        self.output_folder = output_folder
         self.ripped_bytes = self.rip_bytes() # size of file in no of bits where total_bits = total_bytes*8
         self.size = len(self.ripped_bytes) *8 # size of file in no of bits where total_bits = total_bytes*8
         #self.fileout =fileout
         self.fps = fps
-        self.pix_size = pix_size # make sure the pix_sizes are only squares i.e 4,9,16....
+        self.pix_size = pix_size # make sure the pix_sizes are only squares i.e 4,9,16.... and that they should divide the height and width perfectly
         self.res = res
         #below are the coordinate of the end pixel after the content bits are finished
         self.end_x =0
         self.end_y =0
         
-        
     
+        
+        
+    # function to rip the bytes from a file and convert it into an array of bytes
     def rip_bytes(self):
         file = open(self.filename,"rb")
         print(f"reading bytes from:{file.name}")
@@ -93,16 +98,18 @@ class Encoder:
         file.close()
         return bit_sequence
     
+    #the output video file
     @property
     def fileout(self):
-        filename = os.path.splitext(self.filename)
-        file_name = filename[0] # get the name of the file
-        extension = filename[1] # get the extenstion of file (txt,pdf,docx,etc.)
+        infile = os.path.splitext(self.filename)
+        file_name = infile[0] # get the name of the file
+        extension = infile[1] # get the extenstion of file (txt,pdf,docx,etc.)
         #filename_ext_pixsize_.avi
-        return file_name +"_"+ extension.strip(".") +"_"+ self.pix_size  +"_"+".avi"
+        filename = file_name +"_"+ extension.strip(".") +"_"+ self.pix_size  +"_"+".avi"
+        return os.path.join(filename)
         
 
-
+    #encoder function that takes in the bytes and creates the frames
     def encode(self):
 
         if not os.path.exists("output"):
@@ -122,7 +129,7 @@ class Encoder:
         
         pix_size = int(math.sqrt(self.pix_size))
         # this is for storing all the images (frames) that are created as a result of converting bits to pixels
-        png_folder ="frames"
+        png_folder = self.output_folder
 
         # create the folder if it doesnt exist
         if not os.path.exists(png_folder):
@@ -220,9 +227,10 @@ class Encoder:
 #
 class Decoder:
     
-    def __init__(self,filename):
+    def __init__(self,filename,output_folder="out"):
         self.filename=filename
         self.ripped_bytes =[]
+        self.output_folder=output_folder
     
     @property
     def fileout(self):
@@ -267,9 +275,9 @@ class Decoder:
 
             #pixels = image.getdata() # experiment with this once (see pillow docs)
             #print(image.size)
-                for x in range(0,width,pix_size):
-                    for y in range(0,height,pix_size):
-            
+            for x in range(0,width,pix_size):
+                for y in range(0,height,pix_size):
+        
                     pix=0
                     for i in range(2):
                         for j in range(2):

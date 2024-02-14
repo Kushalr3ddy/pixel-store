@@ -5,6 +5,7 @@
 # Learn more from ready-to-use templates: https://www.gitpod.io/docs/introduction/getting-started/quickstart
 
 tasks:
-  - command: echo gitpod ready
+  - command: git pull
+  - command: source venv/bin/activate
 
 
