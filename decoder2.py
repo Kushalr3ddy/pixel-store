@@ -75,7 +75,7 @@ for frame in range(no_of_frames):
                     curr_bit = int(bits[i:i+8],2)
                     binary_bytes.append(curr_bit) # type: ignore
                 binary_bytes = bytes(binary_bytes)
-                with open(f"{out}big_out.pdf", "wb") as file:
+                with open(os.path.join(out,"big_out.pdf"), "wb") as file:
                     file.write(binary_bytes)
                     print("done writing bytes")
                     exit(0)
