@@ -7,27 +7,31 @@ import ffmpeg
 import json
 import math
 import cv2
+import numpy
+from traitlets import Int
 #getting the path of ffmpeg binary if its added using .env file
-load_dotenv()
-if os.environ.get('ffmpeg') is not None:
-    ffmpeg_path = os.getenv("ffmpeg")
-else:
-    print("ffmpeg path not found please install ffmpeg binaries and add to environment variable or a .env file")
-    print("or create a .env and add a ffmpeg variable with value of the path to the ffmpeg binary")
-    exit(0)
+def req_check():
+    load_dotenv()
+    if os.environ.get('ffmpeg') is not None:
+        ffmpeg_path = os.getenv("ffmpeg")
+    else:
+        print("ffmpeg path not found please install ffmpeg binaries and add to environment variable or a .env file")
+        print("or create a .env and add a ffmpeg variable with value of the path to the ffmpeg binary")
+        exit(0)
 
-if os.environ.get('ffprobe') is not None:
-    ffprobe_path = os.getenv("ffprobe")
-else:
-    print("ffprobe path not found please install ffmpeg and add to environment variable")
-    exit(0)    
+    if os.environ.get('ffprobe') is not None:
+        ffprobe_path = os.getenv("ffprobe")
+    else:
+        print("ffprobe path not found please install ffmpeg and add to environment variable")
+        exit(0)    
 
 
 #pixel colors
-red=(255,0,0)
-blue = (0, 0, 255)  # ignore this for now
-one=(0,0,0)
-zero = (255,255,255)
+class Colors:    
+    red=(255,0,0)
+    blue = (0, 0, 255)  # ignore this for now
+    one=(0,0,0) # black pixel
+    zero = (255,255,255) # white pixel
 
 # separate class for resolutions
 class resolutions:
@@ -105,9 +109,16 @@ class Encoder:
         file_name = infile[0] # get the name of the file
         extension = infile[1] # get the extenstion of file (txt,pdf,docx,etc.)
         #filename_ext_pixsize_.avi
-        filename = file_name +"_"+ extension.strip(".") +"_"+ self.pix_size  +"_"+".avi"
+        #filename = file_name +"_"+ extension.strip(".") +"_"+ self.pix_size  +"_"+".avi"
+        filename = file_name +".avi"
         return os.path.join(filename)
         
+    @staticmethod # needs limit and error checking 
+    def etchpixel(image,x:int,y:int,pix_color:tuple,pix_size:int):
+        for i in range(pix_size):
+            for j in range(pix_size):
+                image.putpixel((x+j,y+i),pix_color)
+
 
     #encoder function that takes in the bytes and creates the frames
     def encode(self):
@@ -145,7 +156,7 @@ class Encoder:
             no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
 
         #print(f"no of frames required:{no_of_frames}")
-        for frame in range(no_of_frames):
+        for frame in range(1,no_of_frames+1):
             last_frame=frame
             #create a blank white image and overwrite the pixel values
             image = Image.new('RGB', (width, height), color='white')
@@ -164,11 +175,9 @@ class Encoder:
                         break
                     
                     curr_bit = content[count]
-                    pix_color = one if curr_bit =='1' else zero
+                    pix_color = Colors.one if curr_bit =='1' else Colors.zero
                     
-                    for i in range(pix_size):
-                        for j in range(pix_size):
-                            image.putpixel((x+j,y+i),pix_color)
+                    Encoder.etchpixel(image,x=x,y=y,pix_color=pix_color,pix_size=pix_size)
                     
                     
 
@@ -187,16 +196,17 @@ class Encoder:
             self.end_y=0
         
         #put the red pixel after the last bit encoded to indicate the end bit
-        for i in range(pix_size):
+        """for i in range(pix_size):
             for j in range(pix_size):
-                image.putpixel((self.end_x+j, self.end_y+i), red)
+                image.putpixel((self.end_x+j, self.end_y+i), red)"""
+        Encoder.etchpixel(image,x=x,y=y,pix_color=pix_color,pix_size=pix_size)
         #image.save(f'data/encoded{last_frame}.png')
         image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
         
         
         ####below this line is the ffmpeg encoder stuff
 
-
+        """
         #image = Image.new
         input_pattern = os.path.join(png_folder,"frame%d.png")
         output_video = os.path.join("output",self.fileout)
@@ -207,7 +217,10 @@ class Encoder:
         .overwrite_output()
         .run(cmd=ffmpeg_path)
         )
-        print(f"done encoding to video :output/{self.fileout}")
+        print(f"done encoding to video :output/{self.fileout}")"""
+        video = cv2.VideoWriter(self.fileout, 0, self.fps, (width,height))
+        for image in range(1,no_of_frames):
+            video.write(cv2.imread(os.path.join(png_folder, f"frame{image}.png")))
     
     
 
@@ -227,7 +240,7 @@ class Encoder:
 #
 class Decoder:
     
-    def __init__(self,filename,output_folder="out"):
+    def __init__(self,filename,output_folder="out"):# out is the folder to output the extracted frames
         self.filename=filename
         self.ripped_bytes =[]
         self.output_folder=output_folder
