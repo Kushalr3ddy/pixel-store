@@ -119,6 +119,32 @@ class Encoder:
             for j in range(pix_size):
                 image.putpixel((x+j,y+i),pix_color)
 
+    #first frame for storing the metadata
+    def embed_mdata(self):
+        width = self.res["width"]
+        height =self.res["height"]
+        mdata_frame = Image.new('RGB',(width, height), color='white')
+        mindex =0 # index for the metadata string
+        endx = 0
+        endy=0
+
+        for x in range(width):
+            if mindex >= len(self.metadata):
+                break
+
+            for y in range(height):
+                if mindex >= len(self.metadata):
+                    break
+                pix_color = Colors.one if self.metadata[mindex] == "0" =="1" else Colors.zero
+        
+                Encoder.etchpixel(mdata_frame,x,y,pix_color,self.pix_size)
+                
+                endx=x
+                endy=y
+                mindex+=1
+        pix_color = Colors.red
+        Encoder.etchpixel(mdata_frame,endx,endy,pix_color,self.pix_size)
+        mdata_frame.save(os.path.join(self.output_folder,f"frame0.png"))
 
     #encoder function that takes in the bytes and creates the frames
     def encode(self):
@@ -156,6 +182,9 @@ class Encoder:
             no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
 
         #print(f"no of frames required:{no_of_frames}")
+        print(f"using folder:{self.output_folder} to store the frames")
+
+        self.embed_mdata()
         for frame in range(1,no_of_frames+1):
             last_frame=frame
             #create a blank white image and overwrite the pixel values
@@ -218,22 +247,43 @@ class Encoder:
         .run(cmd=ffmpeg_path)
         )
         print(f"done encoding to video :output/{self.fileout}")"""
-        video = cv2.VideoWriter(self.fileout, 0, self.fps, (width,height))
+        video = cv2.VideoWriter(self.fileout, 0, self.fps, (width,height)) # type:ignore
+        # why n-1 frames is cause the final frame will be put separately
         for image in range(1,no_of_frames):
-            video.write(cv2.imread(os.path.join(png_folder, f"frame{image}.png")))
+            video.write(cv2.imread(os.path.join(png_folder, f"frame{image}.png"))) # type:ignore
+        
+        #this is unnecessary
+        outpath =os.path.join(self.output_folder,self.fileout)
+        print(f"saved the video to :{outpath}")
     
-    
-
+    @staticmethod
+    def bintostr():
+        pass
     @property
     def metadata(self):
         """
+        this function returns the metadata required in binary string format
         need to add metadata to the video itself
         such as the x and y coordinates of the end pixel of the raw bits
         add the original file name with extension to save when decoding
         hash of the file to verify the integrity? prolly will not be required
         
         """
-        pass
+        binary_list=[]
+        _metadata = {"end_x" : self.end_x,
+                     "end_y":self.end_y,
+                     "filename":self.filename
+                     }
+        
+        _metadata = str(_metadata)
+        
+        for char in _metadata:
+        # pad the bytes to 8 bits and append to list
+            binary_list.append(bin(ord(char))[2:].zfill(8))
+         
+        # join the binary values in the list and return as a string
+        return ''.join(binary_list)
+        #pass
 
 #############################################################################################################
 # the Decoder class below
