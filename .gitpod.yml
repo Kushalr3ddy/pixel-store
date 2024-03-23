@@ -6,6 +6,7 @@
 
 tasks:
   - command: git pull
+  - command: python -m venv venv
   - command: source venv/bin/activate
 
 

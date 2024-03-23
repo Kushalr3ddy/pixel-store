@@ -184,7 +184,9 @@ class Encoder:
         #print(f"no of frames required:{no_of_frames}")
         print(f"using folder:{self.output_folder} to store the frames")
 
+        #put the metadata frame as frame0
         self.embed_mdata()
+        
         for frame in range(1,no_of_frames+1):
             last_frame=frame
             #create a blank white image and overwrite the pixel values
@@ -253,7 +255,7 @@ class Encoder:
             video.write(cv2.imread(os.path.join(png_folder, f"frame{image}.png"))) # type:ignore
         
         #this is unnecessary
-        outpath =os.path.join(self.output_folder,self.fileout)
+        outpath =os.path.join(png_folder,self.fileout)
         print(f"saved the video to :{outpath}")
     
     @staticmethod
