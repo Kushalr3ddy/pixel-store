@@ -127,23 +127,25 @@ class Encoder:
         mindex =0 # index for the metadata string
         endx = 0
         endy=0
-
-        for x in range(width):
+        pix_size = int(math.sqrt(self.pix_size))
+        
+        for x in range(0,width,pix_size):
             if mindex >= len(self.metadata):
                 break
 
-            for y in range(height):
+            for y in range(0,height,pix_size):
                 if mindex >= len(self.metadata):
                     break
-                pix_color = Colors.one if self.metadata[mindex] == "0" =="1" else Colors.zero
+                pix_color = Colors.one if self.metadata[mindex] == "0" else Colors.zero
         
-                Encoder.etchpixel(mdata_frame,x,y,pix_color,self.pix_size)
+                Encoder.etchpixel(mdata_frame,x,y,pix_color,pix_size)
                 
                 endx=x
                 endy=y
                 mindex+=1
+
         pix_color = Colors.red
-        Encoder.etchpixel(mdata_frame,endx,endy,pix_color,self.pix_size)
+        Encoder.etchpixel(mdata_frame,endx,endy,pix_color,pix_size)
         mdata_frame.save(os.path.join(self.output_folder,f"frame0.png"))
 
     #encoder function that takes in the bytes and creates the frames
