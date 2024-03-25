@@ -8,7 +8,7 @@ import json
 import math
 import cv2
 import numpy
-from traitlets import Int
+
 #getting the path of ffmpeg binary if its added using .env file
 def req_check():
     load_dotenv()
@@ -128,13 +128,15 @@ class Encoder:
         endx = 0
         endy=0
         pix_size = int(math.sqrt(self.pix_size))
-        
+
+        print(f"length of metadata:{len(self.metadata)}")
+        #exit(0)
         for x in range(0,width,pix_size):
-            if mindex >= len(self.metadata):
+            if mindex == len(self.metadata):
                 break
 
             for y in range(0,height,pix_size):
-                if mindex >= len(self.metadata):
+                if mindex == len(self.metadata):
                     break
                 pix_color = Colors.one if self.metadata[mindex] == "0" else Colors.zero
         
@@ -260,9 +262,7 @@ class Encoder:
         outpath =os.path.join(png_folder,self.fileout)
         print(f"saved the video to :{outpath}")
     
-    @staticmethod
-    def bintostr():
-        pass
+    
     @property
     def metadata(self):
         """
