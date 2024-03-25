@@ -186,8 +186,8 @@ class Encoder:
             no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
 
         #print(f"no of frames required:{no_of_frames}")
-        print(f"using folder:{self.output_folder} to store the frames")
-
+        print(f"using folder:{os.path.join(self.output_folder)} to store the frames")
+        #exit(0)
         #put the metadata frame as frame0
         self.embed_mdata()
         
