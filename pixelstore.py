@@ -291,7 +291,7 @@ class Encoder:
 
 #############################################################################################################
 # the Decoder class below
-#
+#############################################################################################################
 class Decoder:
     
     def __init__(self,filename,output_folder="out"):# out is the folder to output the extracted frames
