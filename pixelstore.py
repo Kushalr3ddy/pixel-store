@@ -1,3 +1,4 @@
+from turtle import width
 from PIL import Image
 import os
 
@@ -294,10 +295,10 @@ class Encoder:
 #############################################################################################################
 class Decoder:
     
-    def __init__(self,filename,output_folder="out"):# out is the folder to output the extracted frames
+    def __init__(self,filename,frame_folder="frames"):# out is the folder to output the extracted frames
         self.filename=filename # video file name
         self.ripped_bytes =[] # to store the extracted frames
-        self.output_folder=output_folder # the output folder for the frames? the embedded_file
+        self.extraction_folder=frame_folder # the output folder for the frames? the embedded_file
     
     @property
     def fileout(self):
@@ -306,31 +307,51 @@ class Decoder:
     
     @property
     def metadata(self):
-        #this method is to return the metadata about the video file in a json format
-        m_data = ffmpeg.probe(self.filename,cmd=ffprobe_path) # type: ignore
-        return m_data
+        if not os.path.exists(os.path.join(self.extraction_folder)):#,"frame0.png")):
+            print("metadata frame not found i.e frame0.png not found")
+            return None
+        im = Image.open(os.path.join(self.extraction_folder,"frame0.jpg"))
+        width,height =im.size
+        pixels = im.load()
+        mdata_bits=[]
+        for x in range(width):
+            for y in range(height):
+                pix = pixels[(x,y)]
+                if pix == Colors.red or int(sum(pix)/3) == 108:
+                    try:
+                        mdata = str(mdata_bits)
+                        return mdata
+                    
+                    except Exception as e:
+                        print("something wrong with the metadata extraction:")
+                        print(e)
+                curr_bit = "1" if pix == Colors.one else "0"
+
+
+        
     
     def extract_frames(self):
         #output pattern to take the video and convert to frames
-        if not os.path.exists("frames"):
-            os.mkdir("frames")
+        if not os.path.exists(self.extraction_folder):
+            os.mkdir(self.extraction_folder)
         
-        vidObj = cv2.VideoCapture(path) 
+        vidObj = cv2.VideoCapture(self.filename)
   
         # Used as counter variable 
         count = 0
     
         # checks whether frames were extracted 
         success = 1
+        no_of_frames = len(os.listdir(self.extraction_folder))
     
-        while success: 
+        for frame in  range(1,no_of_frames+1):
         
             # vidObj object calls read 
             # function extract frames 
             success, image = vidObj.read() 
     
             # Saves the frames with frame-count 
-            cv2.imwrite("frame%d.jpg" % count, image) 
+            cv2.imwrite(os.path.join(self.extraction_folder,f"frame{count}.jpg"), image)
     
             count += 1
 
@@ -341,15 +362,15 @@ class Decoder:
 
         self.extract_frames()
 
-        no_of_frames = len(os.listdir("frames"))
+        no_of_frames = len(os.listdir(self.extraction_folder))
         bits =""
         binary_bytes=[]
         #pix_size = int(math.sqrt(self.pixel_size)))
         pix_size = 2
 
-        for frame in range(no_of_frames):
+        for frame in range(1,no_of_frames):
             x,y = 0,0
-            image = Image.open(os.path.join("frames",f"frame_{frame}.png"))
+            image = Image.open(os.path.join(self.extraction_folder,f"frame_{frame}.png"))
             width, height = image.size
             pixels = image.load()
             print(f"decoding frame:{frame}")
