@@ -255,7 +255,7 @@ class Encoder:
         print(f"done encoding to video :output/{self.fileout}")"""
         video = cv2.VideoWriter(self.fileout, 0, self.fps, (width,height)) # type:ignore
         # why n-1 frames is cause the final frame will be put separately
-        for image in range(1,no_of_frames):
+        for image in range(0,no_of_frames):
             video.write(cv2.imread(os.path.join(png_folder, f"frame{image}.png"))) # type:ignore
         
         #this is unnecessary
@@ -295,9 +295,9 @@ class Encoder:
 class Decoder:
     
     def __init__(self,filename,output_folder="out"):# out is the folder to output the extracted frames
-        self.filename=filename
-        self.ripped_bytes =[]
-        self.output_folder=output_folder
+        self.filename=filename # video file name
+        self.ripped_bytes =[] # to store the extracted frames
+        self.output_folder=output_folder # the output folder for the frames? the embedded_file
     
     @property
     def fileout(self):
@@ -315,13 +315,27 @@ class Decoder:
         if not os.path.exists("frames"):
             os.mkdir("frames")
         
-        output_pattern = os.path.join("frames","frame%d.png")
-        (
-            ffmpeg
-            .input(self.filename)
-            .output(output_pattern, start_number=0)  # Output frame pattern
-            .run(cmd=ffmpeg_path)
-        )
+        vidObj = cv2.VideoCapture(path) 
+  
+        # Used as counter variable 
+        count = 0
+    
+        # checks whether frames were extracted 
+        success = 1
+    
+        while success: 
+        
+            # vidObj object calls read 
+            # function extract frames 
+            success, image = vidObj.read() 
+    
+            # Saves the frames with frame-count 
+            cv2.imwrite("frame%d.jpg" % count, image) 
+    
+            count += 1
+
+
+
 
     def decode(self):
 
