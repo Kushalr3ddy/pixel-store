@@ -307,27 +307,37 @@ class Decoder:
     
     @property
     def metadata(self):
-        if not os.path.exists(os.path.join(self.extraction_folder)):#,"frame0.png")):
+        frame_path = os.path.join(self.extraction_folder,"frame0.png")
+        print(frame_path)
+        if not os.path.exists(frame_path):#,"frame0.png")):
             print("metadata frame not found i.e frame0.png not found")
             return None
-        im = Image.open(os.path.join(self.extraction_folder,"frame0.jpg"))
+        im = Image.open(os.path.join(self.extraction_folder,"frame0.png"))
         width,height =im.size
         pixels = im.load()
         mdata_bits=[]
-        for x in range(width):
-            for y in range(height):
+        binary_bytes=[]
+        for x in range(0,width,2):
+            for y in range(0,height,2):
                 pix = pixels[(x,y)]
-                if pix == Colors.red or int(sum(pix)/3) == 108:
+                if pix == Colors.red:# or int(sum(pix)/3) == 108:
+                    print("foudn red pixel")
                     try:
                         mdata = str(mdata_bits)
+                        for i in range(0,len(mdata_bits),8):
+                            bit = int(mdata_bits[i:i+8],2)
+                            binary_bytes.append(bit) # type: ignore
+                        binary_bytes = bytes(binary_bytes)
                         return mdata
                     
                     except Exception as e:
                         print("something wrong with the metadata extraction:")
                         print(e)
                 curr_bit = "1" if pix == Colors.one else "0"
+                mdata_bits.append(curr_bit)
+                
 
-
+        
         
     
     def extract_frames(self):
@@ -335,25 +345,31 @@ class Decoder:
         if not os.path.exists(self.extraction_folder):
             os.mkdir(self.extraction_folder)
         
-        vidObj = cv2.VideoCapture(self.filename)
+        video_file = cv2.VideoCapture(self.filename)
   
         # Used as counter variable 
         count = 0
     
         # checks whether frames were extracted 
-        success = 1
-        no_of_frames = len(os.listdir(self.extraction_folder))
-    
-        for frame in  range(1,no_of_frames+1):
+
+        frameno = 0
+        while(True):
+            ret,frame = video_file.read()
+            if ret:
+                # if video is still left continue creating images
+                
+                print(f"extracting frame:{frameno}",end="\r")
+
+                cv2.imwrite(os.path.join(self.extraction_folder,f"frame{frameno}.png"), frame)
+                frameno += 1
+            else:
+                break
+        video_file.release()
+        cv2.destroyAllWindows()
         
-            # vidObj object calls read 
-            # function extract frames 
-            success, image = vidObj.read() 
     
-            # Saves the frames with frame-count 
-            cv2.imwrite(os.path.join(self.extraction_folder,f"frame{count}.jpg"), image)
     
-            count += 1
+            
 
 
 
