@@ -1,6 +1,16 @@
 from pixelstore.resolutions import Resolutions
 from pixelstore.color import Colors
 
+from PIL import Image
+import os
+
+import json
+import math
+import cv2
+import numpy
+
+#comment out the imports when pushing code
+
 class Encoder:
 
     
@@ -20,9 +30,11 @@ class Encoder:
 
         
     """
-    def __init__(self,filename,fps=6,pix_size=4,res=Resolutions.res_480p,output_folder="data"):
+    def __init__(self,filename,fps=6,pix_size=4,res=Resolutions.res_480p,frame_folder="data",output_folder="output"):
         self.filename = filename
-        self.output_folder = output_folder
+        self.frame_folder = frame_folder
+        self.output_folder=output_folder
+        
         self.ripped_bytes = self.rip_bytes() # size of file in no of bits where total_bits = total_bytes*8
         self.size = len(self.ripped_bytes) *8 # size of file in no of bits where total_bits = total_bytes*8
         #self.fileout =fileout
@@ -37,7 +49,7 @@ class Encoder:
         
         
     # function to rip the bytes from a file and convert it into an array of bytes
-    def rip_bytes(self):
+    def rip_bytes(self)->list:
         file = open(self.filename,"rb")
         print(f"reading bytes from:{file.name}")
         raw_bytes =file.read(1)
@@ -61,7 +73,7 @@ class Encoder:
     
     #the output video file
     @property
-    def fileout(self):
+    def fileout(self) ->str:
         infile = os.path.splitext(self.filename)
         file_name = infile[0] # get the name of the file
         extension = infile[1] # get the extenstion of file (txt,pdf,docx,etc.)
@@ -71,13 +83,13 @@ class Encoder:
         return os.path.join(filename)
         
     @staticmethod # needs limit and error checking 
-    def etchpixel(image,x:int,y:int,pix_color:tuple,pix_size:int):
+    def etchpixel(image,x:int,y:int,pix_color:tuple,pix_size:int) ->None:
         for i in range(pix_size):
             for j in range(pix_size):
                 image.putpixel((x+j,y+i),pix_color)
 
     #first frame for storing the metadata
-    def embed_mdata(self):
+    def embed_mdata(self) ->None:
         width = self.res["width"]
         height =self.res["height"]
         mdata_frame = Image.new('RGB',(width, height), color='white')
@@ -99,19 +111,37 @@ class Encoder:
         
                 Encoder.etchpixel(mdata_frame,x,y,pix_color,pix_size)
                 
+                
+                
                 endx=x
                 endy=y
                 mindex+=1
-
+        
+        #check where the bits end
+        if endy+pix_size < height:
+            endy+=pix_size
+        else:
+            endx+=1
+            endy=0
+        
         pix_color = Colors.red
         Encoder.etchpixel(mdata_frame,endx,endy,pix_color,pix_size)
-        mdata_frame.save(os.path.join(self.output_folder,f"frame0.png"))
-
+        mdata_frame.save(os.path.join(self.frame_folder,f"frame0.png"))
+        
+        
+    
+    
+    
+    
+    def generate_frame(self):
+        pass
+    
+    
+    
+    
     #encoder function that takes in the bytes and creates the frames
     def encode(self):
 
-        if not os.path.exists("output"):
-            os.mkdir("output")
 
         
         no_of_frames = 1
@@ -127,10 +157,11 @@ class Encoder:
         
         pix_size = int(math.sqrt(self.pix_size))
         # this is for storing all the images (frames) that are created as a result of converting bits to pixels
-        png_folder = self.output_folder
+        png_folder = self.frame_folder
 
         # create the folder if it doesnt exist
         if not os.path.exists(png_folder):
+            print(f"{self.frame_folder}/ not found creating {self.frame_folder}/ ")
             os.mkdir(png_folder)
         
         content=''.join(self.ripped_bytes)#.replace('\n','')
@@ -143,7 +174,7 @@ class Encoder:
             no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
 
         #print(f"no of frames required:{no_of_frames}")
-        print(f"using folder:{os.path.join(self.output_folder)} to store the frames")
+        print(f"using folder:{os.path.join(self.frame_folder)} to store the frames")
         #exit(0)
         #put the metadata frame as frame0
         self.embed_mdata()
@@ -158,7 +189,8 @@ class Encoder:
                     print("reached end of data bits")
                     break
                 
-            print(f"encoding frame :{frame} of {no_of_frames-1}",end="\r" )
+            print(f"encoding frame :{frame} of {no_of_frames+1}",end="\r" )
+            
             for x in range(0,width,pix_size):
                 if count == len(content):
                     break
@@ -210,7 +242,8 @@ class Encoder:
         .run(cmd=ffmpeg_path)
         )
         print(f"done encoding to video :output/{self.fileout}")"""
-        video = cv2.VideoWriter(self.fileout, 0, self.fps, (width,height)) # type:ignore
+        video_name = os.path.join(self.output_folder,self.fileout)
+        video = cv2.VideoWriter(video_name, 0, self.fps, (width,height)) # type:ignore
         # why n-1 frames is cause the final frame will be put separately
         for image in range(0,no_of_frames):
             video.write(cv2.imread(os.path.join(png_folder, f"frame{image}.png"))) # type:ignore
