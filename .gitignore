@@ -24,3 +24,4 @@ __pycache__/
 frames/
 oops_test.py
 test/
+ffmpeg_build/
