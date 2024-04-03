@@ -1,14 +1,13 @@
-from PIL import Image
-import os
+from pixelstore.encoder import Encoder
 
-image = Image.open(os.path.join("data","frame0.png"))
-pixels = image.load()
-width, height = image.size
 
-pixel_arry=[]
-for x in range(0,width,2):
-    for y in range(0,height,2):
-        #print(pixels[(x,y)])
-        if pixels[(x,y)] == (255,0,0):
-            
-            print(f"red found at :{x},{y}")
+#enc1 = Encoder(filename="bigc.pdf")
+#print(enc1.metadata)
+#enc1.encode()
+
+#dec1=Decoder(filename="bigc.avi")
+#dec1.extract_frames()
+#print(dec1.metadata)
+
+
+
