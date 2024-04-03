@@ -25,3 +25,4 @@ frames/
 oops_test.py
 test/
 ffmpeg_build/
+.venv/
