@@ -223,14 +223,14 @@ class Encoder:
     @property
     def metadata(self):
         """
-        this function returns the metadata required in binary string format
-        need to add metadata to the video itself
+        this function returns the metadata required in binary string format i.e "1000101..."
+        first frame is reserved for metadata
         such as the x and y coordinates of the end pixel of the raw bits
         add the original file name with extension to save when decoding
         hash of the file to verify the integrity? prolly will not be required
         
         """
-        binary_list=[]
+        metadataBytes=[]
         _metadata = {"pixel_size":self.pix_size,
                      "end_x" : self.end_x,
                      "end_y":self.end_y,
@@ -241,8 +241,8 @@ class Encoder:
         
         for char in _metadata:
         # pad the bytes to 8 bits and append to list
-            binary_list.append(bin(ord(char))[2:].zfill(8))
+            metadataBytes.append(bin(ord(char))[2:].zfill(8))
          
         # join the binary values in the list and return as a string
-        return ''.join(binary_list)
+        return ''.join(metadataBytes)
         #pass
