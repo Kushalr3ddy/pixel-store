@@ -41,25 +41,44 @@ class Decoder:
         pixels = im.load()
         mdata_bits=[]
         binary_bytes=[]
+        check=1
         for x in range(0,width,2):
+            if not check:
+                break
             for y in range(0,height,2):
+                if not check:
+                    break
+                r_avg=0
+                g_avg=0
+                b_avg=0
+                
                 
                 pix=0
                 for i in range(2):
                     for j in range(2):
-                        curr_pix = pixels[(x+j,y+i)] # check the bit checker below if you want to change this
-                        pix += sum(curr_pix)/3
-
-                pix/=4
-                pix = int(pix)
+                        r,g,b = pixels[(x+j,y+i)]
+                        r_avg +=r
+                        g_avg+=g
+                        b_avg+=b
+                        
+                        
+                        #curr_pix = pixels[(x+j,y+i)] # check the bit checker below if you want to change this
+                        #pix += sum(curr_pix)/3
+                r_avg/=4
+                g_avg/=4
+                b_avg/=4
                 
-                pix = pixels[(x,y)]
+                #pix/=4
+                #pix = int(pix)
+                
+                #pix = pixels[(x,y)]
                 
                 #print(pix,end = ", ")
                 #if pix == Colors.red:# or int(sum(pix)/3) == 108:
                 #if pix == 108:
-                if pix[0] > pix[1] and pix[0] > pix[2]:
-                    print(f"foudn red pixel at x:{x} y:{y}")
+                #if pix[0] > pix[1] and pix[0] > pix[2]:
+                if r_avg > 150 and g_avg < 100 and b_avg < 100:
+                    print(f"found red pixel at x:{x} y:{y}")
                     try:
                         mdata = str(mdata_bits)
                         for i in range(0,len(mdata_bits),8):
