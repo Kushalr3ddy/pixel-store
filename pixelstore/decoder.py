@@ -91,6 +91,7 @@ class Decoder:
                     
                     
                     except Exception as e:
+                        print(mdata)
                         raise(e)
                         print("something wrong with the metadata extraction:")
                         print(e)
