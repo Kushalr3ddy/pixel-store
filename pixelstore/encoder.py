@@ -27,6 +27,7 @@ class Encoder:
         >end_pixel
         >no of frames (of the video file)
         >hash of the file (optional for future usage)
+        >frame folder (directory to save the frames createds)
 
         
     """
@@ -44,6 +45,7 @@ class Encoder:
         #below are the coordinate of the end pixel after the content bits are finished
         self.end_x =0
         self.end_y =0
+        self.no_of_frames=1
         
     
         
@@ -144,7 +146,7 @@ class Encoder:
 
 
         
-        no_of_frames = 1
+        #no_of_frames = 1
         
         # test with 480p for now later add other resolutions
         width = self.res["width"]
@@ -171,7 +173,7 @@ class Encoder:
         #if len(content) > total_pixels:
         #    no_of_frames = int((len(content)/total_pixels)+1)
         if len(content) > total_pixels:
-            no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
+            self.no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
 
         #print(f"no of frames required:{no_of_frames}")
         print(f"using folder:{os.path.join(self.frame_folder)} to store the frames")
@@ -179,7 +181,7 @@ class Encoder:
         #put the metadata frame as frame0
         self.embed_mdata()
         
-        for frame in range(1,no_of_frames+1):
+        for frame in range(1,self.no_of_frames+1):
             last_frame=frame
             #create a blank white image and overwrite the pixel values
             image = Image.new('RGB', (width, height), color='white')
@@ -189,7 +191,7 @@ class Encoder:
                     print("reached end of data bits")
                     break
                 
-            print(f"encoding frame :{frame} of {no_of_frames+1}",end="\r" )
+            print(f"encoding frame :{frame} of {self.no_of_frames+1}",end="\r" )
             
             for x in range(0,width,pix_size):
                 if count == len(content):
@@ -228,8 +230,14 @@ class Encoder:
         image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
         
         
+    def create_video(self) ->None:
+        width = self.res["width"]
+        height = self.res["height"]
+        png_folder = self.frame_folder
+        """
+        function to create the video
+        """
         ####below this line is the ffmpeg encoder stuff
-
         """
         #image = Image.new
         input_pattern = os.path.join(png_folder,"frame%d.png")
@@ -245,11 +253,11 @@ class Encoder:
         video_name = os.path.join(self.output_folder,self.fileout)
         video = cv2.VideoWriter(video_name, 0, self.fps, (width,height)) # type:ignore
         # why n-1 frames is cause the final frame will be put separately
-        for image in range(0,no_of_frames):
-            video.write(cv2.imread(os.path.join(png_folder, f"frame{image}.png"))) # type:ignore
-        
+        for image in range(0,self.no_of_frames):
+            video.write(cv2.imread(os.path.join(self.frame_folder, f"frame{image}.png"))) # type:ignore
+
         #this is unnecessary
-        outpath =os.path.join(png_folder,self.fileout)
+        outpath =os.path.join(self.frame_folder,self.fileout)
         print(f"saved the video to :{outpath}")
     
     
@@ -263,7 +271,7 @@ class Encoder:
         hash of the file to verify the integrity? prolly will not be required
         
         """
-        metadataBytes=[]
+        metadataBytes=[] # ignore this for now
         _metadata = {"pixel_size":self.pix_size,
                      "end_x" : self.end_x,
                      "end_y":self.end_y,
