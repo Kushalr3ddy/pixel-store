@@ -26,7 +26,6 @@ oops_test.py
 frames/
 __pycache__/
 .venv
-venv/
 downloadtest.py
 idek/
 output/
