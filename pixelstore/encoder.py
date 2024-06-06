@@ -250,6 +250,9 @@ class Encoder:
         .run(cmd=ffmpeg_path)
         )
         print(f"done encoding to video :output/{self.fileout}")"""
+        if not os.path.exists(self.output_folder):
+            os.mkdir(self.output_folder)
+            
         video_name = os.path.join(self.output_folder,self.fileout)
         video = cv2.VideoWriter(video_name, 0, self.fps, (width,height)) # type:ignore
         # why n-1 frames is cause the final frame will be put separately
