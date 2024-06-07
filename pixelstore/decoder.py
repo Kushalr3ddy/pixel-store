@@ -11,10 +11,6 @@ import numpy
 
 #comment out the imports when pushing code
 
-#############################################################################################################
-# the Decoder class below
-#############################################################################################################
-
 class Decoder:
     
     def __init__(self,filename,frame_folder="frames"):# out is the folder to output the extracted frames
