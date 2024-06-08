@@ -44,26 +44,23 @@ class Decoder:
             for y in range(0,height,2):
                 if not check:
                     break
-                r_avg=0
-                g_avg=0
-                b_avg=0
                 
-                
-                pix=0
+                r_list =[]
+                g_list=[]
+                b_list=[]
+
                 for i in range(2):
                     for j in range(2):
                         r,g,b = pixels[(x+j,y+i)]
-                        r_avg +=r
-                        g_avg+=g
-                        b_avg+=b
-                        
-                        
-                        #curr_pix = pixels[(x+j,y+i)] # check the bit checker below if you want to change this
-                        #pix += sum(curr_pix)/3
-                r_avg/=4
-                g_avg/=4
-                b_avg/=4
+                        r_list.append(r)
+                        g_list.append(g)
+                        b_list.append(b)
+
+                r_avg=sum(r_list)/len(r_list)
+                g_avg=sum(g_list)/len(g_list)
+                b_avg=sum(b_list)/len(b_list)
                 
+                pix =(r_avg,g_avg,b_avg)
                 #pix/=4
                 #pix = int(pix)
                 
@@ -77,7 +74,10 @@ class Decoder:
                     print(f"found red pixel at x:{x} y:{y}")
                     try:
                         mdata = str(mdata_bits)
-                        for i in range(0,len(mdata_bits),8):
+                        #mdata = mdata_bits
+                        #print(''.join(mdata_bits))
+                        #exit()
+                        for i in range(0,len(mdata),8):
                             byte = int(mdata[i:i+8],2) # type: ignore
                             binary_bytes.append(byte) # type: ignore
                         binary_bytes = bytes(binary_bytes)
@@ -88,14 +88,14 @@ class Decoder:
                     
                     except Exception as e:
                         print(mdata)
-                        raise(e)
+                        #raise(e) # ye ik this stoopid
                         print("something wrong with the metadata extraction:")
                         print(e)
                 else:
-                    curr_bit = "1" if pix == Colors.one else "0"
+                    curr_bit = "0" if pix == Colors.one else "1"
                     mdata_bits.append(curr_bit)
                 
-        return "lmao"
+        #return "lmao"
     
     def extract_frames(self):
         #output pattern to take the video and convert to frames
@@ -129,6 +129,8 @@ class Decoder:
             
 
 
+    def write_file(self):
+        pass
 
 
     def decode(self):

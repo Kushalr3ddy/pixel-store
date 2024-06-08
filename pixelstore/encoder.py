@@ -1,6 +1,7 @@
 from pixelstore.resolutions import Resolutions
 from pixelstore.color import Colors
 
+from pixelstore import hash_gen
 from PIL import Image
 import os
 
@@ -8,7 +9,7 @@ import json
 import math
 import cv2
 import numpy
-
+import hashlib
 #comment out the imports when pushing code
 
 class Encoder:
@@ -135,7 +136,7 @@ class Encoder:
     
     
     
-    def generate_frame(self):
+    def generate_frame(self):#ignore these empty functions for now
         pass
     
     
@@ -274,12 +275,15 @@ class Encoder:
         hash of the file to verify the integrity? prolly will not be required
         
         """
+        file_hash = hash_gen.get_md5(self.filename) #checksum of the original file
         metadataBytes=[] # ignore this for now
-        _metadata = {"pixel_size":self.pix_size,
-                     "end_x" : self.end_x,
-                     "end_y":self.end_y,
-                     "filename":self.filename
-                     }
+        _metadata = {
+                    "pixel_size":self.pix_size,
+                    "end_x" : self.end_x,
+                    "end_y":self.end_y,
+                    "filename":self.filename,
+                    "checksum":file_hash # this is for checking file integrity
+                    }
         
         _metadata = str(_metadata)
         
