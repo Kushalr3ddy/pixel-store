@@ -91,6 +91,10 @@ class Encoder:
             for j in range(pix_size):
                 image.putpixel((x+j,y+i),pix_color)
 
+    def generate_frame(self):#ignore these empty functions for now
+        pass
+    
+    
     #first frame for storing the metadata
     def embed_mdata(self) ->None:
         width = self.res["width"]
@@ -101,7 +105,7 @@ class Encoder:
         endy=0
         pix_size = int(math.sqrt(self.pix_size))
 
-        print(f"length of metadata:{len(self.metadata)}")
+        #print(f"length of metadata:{len(self.metadata)}")
         #exit(0)
         for x in range(0,width,pix_size):
             if mindex == len(self.metadata):
@@ -110,7 +114,7 @@ class Encoder:
             for y in range(0,height,pix_size):
                 if mindex == len(self.metadata):
                     break
-                pix_color = Colors.one if self.metadata[mindex] == "0" else Colors.zero
+                pix_color = Colors.one if self.metadata[mindex] == "1" else Colors.zero
         
                 Encoder.etchpixel(mdata_frame,x,y,pix_color,pix_size)
                 
@@ -136,8 +140,7 @@ class Encoder:
     
     
     
-    def generate_frame(self):#ignore these empty functions for now
-        pass
+    
     
     
     
@@ -192,7 +195,7 @@ class Encoder:
                     print("reached end of data bits")
                     break
                 
-            print(f"encoding frame :{frame} of {self.no_of_frames+1}",end="\r" )
+            print(f"encoding frame :{frame} of {self.no_of_frames}",end="\r" )
             
             for x in range(0,width,pix_size):
                 if count == len(content):
@@ -229,8 +232,10 @@ class Encoder:
         Encoder.etchpixel(image,x=x,y=y,pix_color=pix_color,pix_size=pix_size)
         #image.save(f'data/encoded{last_frame}.png')
         image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
+        #self.create_video()
+
         
-        
+    # function to create the video
     def create_video(self) ->None:
         width = self.res["width"]
         height = self.res["height"]

@@ -73,26 +73,28 @@ class Decoder:
                 if r_avg > 150 and g_avg < 100 and b_avg < 100:
                     print(f"found red pixel at x:{x} y:{y}")
                     try:
-                        mdata = str(mdata_bits)
+                        mdata = ''.join(mdata_bits)
                         #mdata = mdata_bits
                         #print(''.join(mdata_bits))
+                        #return mdata
                         #exit()
                         for i in range(0,len(mdata),8):
                             byte = int(mdata[i:i+8],2) # type: ignore
                             binary_bytes.append(byte) # type: ignore
-                        binary_bytes = bytes(binary_bytes)
+                        binary_bytes = bytes(binary_bytes)# dont remove this else it wont do the chr thingy
+                        #binary_bytes = binary_bytes
                         #return mdata
-                        return binary_bytes
+                        return str(binary_bytes)
                     
                     
                     
                     except Exception as e:
                         print(mdata)
-                        #raise(e) # ye ik this stoopid
+                        raise(e) # ye ik this stoopid
                         print("something wrong with the metadata extraction:")
                         print(e)
                 else:
-                    curr_bit = "0" if pix == Colors.one else "1"
+                    curr_bit = "1" if pix == Colors.one else "0"
                     mdata_bits.append(curr_bit)
                 
         #return "lmao"
