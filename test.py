@@ -10,6 +10,8 @@ import os
 #enc1.encode()
 #exit()
 filename = os.path.join("output","bigc.avi")
+filename = os.path.join("output","compressed_out.mp4")
+filename = os.path.join("output","50_compressed.mp4")
 dec1=Decoder(filename=filename)
 
 #dec1.extract_frames()

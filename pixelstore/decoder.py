@@ -23,6 +23,7 @@ class Decoder:
         video_name = self.filename.split("_")
         return video_name[0] + "." + video_name[1]
     
+
     @property
     def metadata(self):
         mdataFramePath = os.path.join(self.extraction_folder,"frame0.png")
@@ -80,22 +81,31 @@ class Decoder:
                         #exit()
                         for i in range(0,len(mdata),8):
                             byte = int(mdata[i:i+8],2) # type: ignore
-                            binary_bytes.append(byte) # type: ignore
-                        binary_bytes = bytes(binary_bytes)# dont remove this else it wont do the chr thingy
-                        #binary_bytes = binary_bytes
+                            binary_bytes.append(chr(byte)) # type: ignore
+                        #binary_bytes = bytes(binary_bytes)# dont remove this else it wont do the chr thingy
+                        binary_bytes = binary_bytes
                         #return mdata
-                        return str(binary_bytes)
+                        return str(''.join(binary_bytes))
                     
                     
                     
                     except Exception as e:
                         print(mdata)
-                        raise(e) # ye ik this stoopid
+                        #raise(e) # ye ik this stoopid
                         print("something wrong with the metadata extraction:")
                         print(e)
                 else:
-                    curr_bit = "1" if pix == Colors.one else "0"
-                    mdata_bits.append(curr_bit)
+                    curr_bit =None
+                    #curr_bit = "1" if pix == Colors.one else "0" # this is the line thats supposed to work
+                    #curr_bit = "0" if pix == Colors.one else "1" # why is this even working it should be 1 for colors.one but lmao no fuk you no reason
+                    if pix <= (80,80,80): # this is just my own approximation need to verify the exact value at which black cannot be distinguised
+                        curr_bit = "0"
+                    else:
+                        curr_bit = "1"
+                    try:
+                        mdata_bits.append(curr_bit)
+                    except e:
+                        print(e)
                 
         #return "lmao"
     
@@ -191,3 +201,5 @@ class Decoder:
                         #elif pix == zero:
                             bits+='0'
                         #print(pix,end="")
+    
+    def get_pixel_values(self):
