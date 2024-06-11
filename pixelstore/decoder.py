@@ -102,7 +102,7 @@ class Decoder:
             os.mkdir("frames")
         
         no_of_frames = len(os.listdir(self.extraction_folder))
-        bits =""
+        bits = ""
         binary_bytes=[]
         #pix_size = int(math.sqrt(self.pixel_size)))
         pix_size = 2
