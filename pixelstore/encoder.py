@@ -55,17 +55,17 @@ class Encoder:
     def rip_bytes(self)->list:
         file = open(self.filename,"rb")
         print(f"reading bytes from:{file.name}")
-        raw_bytes =file.read(1)
+        raw_bytes =file.read(1)# reads the first byte of a file
         bit_sequence = []
         padded_bytes=[] # irrelevant for now
         count =0
-        while raw_bytes:
+        while raw_bytes: # reads a file till the bytes run out
             curr_byte = bin(int.from_bytes(raw_bytes,byteorder="big"))
             curr_byte = curr_byte[2:]
             if len(curr_byte) < 8:
                 # fill up the lsb so if a byte is 1010 it will become 00001010
                 # this is done so it becomes 8 bits ie one whole byte for easy parsing later on
-                curr_byte = curr_byte.zfill(8)
+                curr_byte = curr_byte.zfill(8) # check if this affects the checksum
                 padded_bytes.append(count)
             #print((curr_byte))#,end=" ")
             raw_bytes = file.read(1)
@@ -83,6 +83,7 @@ class Encoder:
         #filename_ext_pixsize_.avi
         #filename = file_name +"_"+ extension.strip(".") +"_"+ self.pix_size  +"_"+".avi"
         filename = file_name +".avi"
+        #filename = file_name +".mp4"
         return os.path.join(filename)
         
     @staticmethod # needs limit and error checking 
@@ -145,7 +146,7 @@ class Encoder:
     
     
     
-    #encoder function that takes in the bytes and creates the frames
+    #encoder function
     def encode(self):
 
 
@@ -170,6 +171,7 @@ class Encoder:
             print(f"{self.frame_folder}/ not found creating {self.frame_folder}/ ")
             os.mkdir(png_folder)
         
+        rawbytes = self.ripped_bytes
         content=''.join(self.ripped_bytes)#.replace('\n','')
         image = Image.new('RGB', (width, height), color='white')
         

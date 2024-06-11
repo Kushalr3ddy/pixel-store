@@ -17,15 +17,25 @@ class Decoder:
         self.filename=filename # video file name
         self.ripped_bytes =[] # to store the extracted frames
         self.extraction_folder=frame_folder # the output folder for the frames? the embedded_file
-    
+        #fileout
+        #metadata
+        
     @property
     def fileout(self):
-        video_name = self.filename.split("_")
-        return video_name[0] + "." + video_name[1]
+        #video_name = self.filename.split("_")
+        #return video_name[0] + "." + video_name[1]
+        raw_json  = self.metadata
+        raw_json  = raw_json.replace("\'","\"")
+        raw_json = json.loads(raw_json)
+
+        out_filename = raw_json["filename"]
+        return out_filename
+
     
 
+
     @property
-    def metadata(self):
+    def metadata(self)->str:
         mdataFramePath = os.path.join(self.extraction_folder,"frame0.png")
         if not os.path.exists(mdataFramePath):
             print("metadata frame not found i.e frame0.png not found")
@@ -34,80 +44,19 @@ class Decoder:
         print(f"metadata frame found at: {self.extraction_folder}/")
         
         im = Image.open(os.path.join(self.extraction_folder,"frame0.png"))
-        width,height =im.size
-        pixels = im.load()
-        mdata_bits=[]
-        binary_bytes=[]
-        check=1
-        for x in range(0,width,2):
-            if not check:
-                break
-            for y in range(0,height,2):
-                if not check:
-                    break
-                
-                r_list =[]
-                g_list=[]
-                b_list=[]
+        #width,height =im.size
+        #pixels = im.load()
+        try:
+            str_mdata = self.get_pixel_values(im,True) # set single frame to true
+        
+        except Exception as e:
+            print(str_mdata)
+            #raise(e) # ye ik this stoopid
+            print("something wrong with the metadata extraction:")
+            print(e)
 
-                for i in range(2):
-                    for j in range(2):
-                        r,g,b = pixels[(x+j,y+i)]
-                        r_list.append(r)
-                        g_list.append(g)
-                        b_list.append(b)
-
-                r_avg=sum(r_list)/len(r_list)
-                g_avg=sum(g_list)/len(g_list)
-                b_avg=sum(b_list)/len(b_list)
-                
-                pix =(r_avg,g_avg,b_avg)
-                #pix/=4
-                #pix = int(pix)
-                
-                #pix = pixels[(x,y)]
-                
-                #print(pix,end = ", ")
-                #if pix == Colors.red:# or int(sum(pix)/3) == 108:
-                #if pix == 108:
-                #if pix[0] > pix[1] and pix[0] > pix[2]:
-                if r_avg > 150 and g_avg < 100 and b_avg < 100:
-                    print(f"found red pixel at x:{x} y:{y}")
-                    try:
-                        mdata = ''.join(mdata_bits)
-                        #mdata = mdata_bits
-                        #print(''.join(mdata_bits))
-                        #return mdata
-                        #exit()
-                        for i in range(0,len(mdata),8):
-                            byte = int(mdata[i:i+8],2) # type: ignore
-                            binary_bytes.append(chr(byte)) # type: ignore
-                        #binary_bytes = bytes(binary_bytes)# dont remove this else it wont do the chr thingy
-                        binary_bytes = binary_bytes
-                        #return mdata
-                        return str(''.join(binary_bytes))
-                    
-                    
-                    
-                    except Exception as e:
-                        print(mdata)
-                        #raise(e) # ye ik this stoopid
-                        print("something wrong with the metadata extraction:")
-                        print(e)
-                else:
-                    curr_bit =None
-                    #curr_bit = "1" if pix == Colors.one else "0" # this is the line thats supposed to work
-                    #curr_bit = "0" if pix == Colors.one else "1" # why is this even working it should be 1 for colors.one but lmao no fuk you no reason
-                    if pix <= (80,80,80): # this is just my own approximation need to verify the exact value at which black cannot be distinguised
-                        curr_bit = "0"
-                    else:
-                        curr_bit = "1"
-                    try:
-                        mdata_bits.append(curr_bit)
-                    except e:
-                        print(e)
-                
-        #return "lmao"
+        return str_mdata
+        #return "lmao get rekt"
     
     def extract_frames(self):
         #output pattern to take the video and convert to frames
@@ -149,6 +98,9 @@ class Decoder:
 
         self.extract_frames()
 
+        if not os.path.exists("frames"):
+            os.mkdir("frames")
+        
         no_of_frames = len(os.listdir(self.extraction_folder))
         bits =""
         binary_bytes=[]
@@ -156,12 +108,12 @@ class Decoder:
         pix_size = 2
 
         for frame in range(1,no_of_frames):
-            x,y = 0,0
+            #x,y = 0,0 # lmao tf this??
             image = Image.open(os.path.join(self.extraction_folder,f"frame_{frame}.png"))
             width, height = image.size
             pixels = image.load()
             print(f"decoding frame:{frame}")
-            
+            output_path = os.path.join(self.fileout)
             for x in range(0,width,pix_size):
                 for y in range(0,height,pix_size):
 
@@ -175,9 +127,9 @@ class Decoder:
                     pix = int(pix)
 
                     #if pix == 85 and frame == no_of_frames-1:
-                    #if pix == 108: #after downloading from youtube pixel color changes
+                    #'if pix == 108: #after downloading from youtube pixel color changes
                     if pix == 108 and frame == no_of_frames-1: #after downloading from youtube pixel color changes
-                    #if pix == red_color:
+                    #if pix == red_color: # geh ass dumb method 
 
                         print(f"reached end of file at:x:{x},y:{y}")
                         print(f"len of bits:{len(bits)}")
@@ -202,4 +154,88 @@ class Decoder:
                             bits+='0'
                         #print(pix,end="")
     
-    def get_pixel_values(self):
+    #for this function pass frame by frame and then append all the resultant bytes
+    def get_pixel_values(self,im:Image,single_frame:False)->str:
+        
+        """
+        this function takes a frames, extracts the bits from it and returns it
+        takes 3 variables:
+        self
+        im:Image(pillow.Image object )
+        single_frame: to determine if its a single frame being decoded or a continous stream
+
+        """
+        
+        width,height =im.size
+        pixels = im.load()
+        data_bits=[] # empty list for appending bit by bit
+        binary_bytes=[] # ignore this
+        check=1 # this for getting yeeted out of loop
+
+        for x in range(0,width,2):
+            if not check:
+                break
+            for y in range(0,height,2):
+                if not check:
+                    break
+                
+                r_list =[]
+                g_list=[]
+                b_list=[]
+
+                for i in range(2):
+                    for j in range(2):
+                        r,g,b = pixels[(x+j,y+i)]
+                        r_list.append(r)
+                        g_list.append(g)
+                        b_list.append(b)
+
+                r_avg=sum(r_list)/len(r_list)
+                g_avg=sum(g_list)/len(g_list)
+                b_avg=sum(b_list)/len(b_list)
+                
+                pix =(r_avg,g_avg,b_avg)
+                #pix/=4
+                #pix = int(pix)
+                
+                #pix = pixels[(x,y)]
+                
+                #print(pix,end = ", ")
+                #if pix == Colors.red:# or int(sum(pix)/3) == 108:
+                #if pix == 108:
+                #if pix[0] > pix[1] and pix[0] > pix[2]:
+                if single_frame and r_avg > 150 and g_avg < 100 and b_avg < 100:
+                    print(f"found red pixel at x:{x} y:{y}")
+                    try:
+                        str_data = ''.join(data_bits)
+                        #str_data = data_bits
+                        #print(''.join(data_bits))
+                        #return str_data
+                        #exit()
+                        for i in range(0,len(str_data),8):
+                            byte = int(str_data[i:i+8],2) # type: ignore
+                            binary_bytes.append(chr(byte)) # type: ignore
+                        #binary_bytes = bytes(binary_bytes)# dont remove this else it wont do the chr conversion thingy
+                        #binary_bytes = binary_bytes # why dis idek forgor
+                        #return str_data
+                        return str(''.join(binary_bytes))
+                    except Exception as e:
+                        print("something wrong with reading bytes")
+                        print(e)
+                    
+                    
+                    
+                else:
+                    curr_bit =None
+                    #curr_bit = "1" if pix == Colors.one else "0" # this is the line thats supposed to work
+                    #curr_bit = "0" if pix == Colors.one else "1" # why is this even working it should be 1 for colors.one but lmao no fuk you no reason
+                    if pix <= (80,80,80): # this is just my own approximation need to verify the exact value at which black cannot be distinguised
+                        curr_bit = "1"
+                    else:
+                        curr_bit = "0"
+                    try:
+                        data_bits.append(curr_bit)
+                    except e:
+                        print(e)
+        
+        return data_bits
