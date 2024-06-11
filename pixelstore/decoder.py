@@ -17,8 +17,9 @@ class Decoder:
         self.filename=filename # video file name
         self.ripped_bytes =[] # to store the extracted frames
         self.extraction_folder=frame_folder # the output folder for the frames? the embedded_file
+        
         #fileout
-        #metadata
+        self.metadata = None
         
     @property
     def fileout(self):
@@ -106,7 +107,8 @@ class Decoder:
         binary_bytes=[]
         #pix_size = int(math.sqrt(self.pixel_size)))
         pix_size = 2
-
+        
+        #everything below this should be shifted to the get_pixel_values() function later on
         for frame in range(1,no_of_frames):
             #x,y = 0,0 # lmao tf this??
             image = Image.open(os.path.join(self.extraction_folder,f"frame_{frame}.png"))
