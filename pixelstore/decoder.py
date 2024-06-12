@@ -13,40 +13,77 @@ import numpy
 
 class Decoder:
     
-    def __init__(self,filename,frame_folder="frames"):# out is the folder to output the extracted frames
+    def __init__(self,filename,frame_folder="frames",metadata=None):
         self.filename=filename # video file name
         self.ripped_bytes =[] # to store the extracted frames
         self.extraction_folder=frame_folder # the output folder for the frames? the embedded_file
         
         #fileout
-        self.metadata = None
-        
+        self.metadata = self.get_metadata() # this instead of @property as the @property keeps calling function
+
+    def clean_json(self,raw_json:str)->str:
+        if raw_json == None:
+            print("json is None")
+            return
+        try:
+            raw_json  = raw_json.replace("\'","\"")
+            #raw_json = json.loads(raw_json)
+            return raw_json
+        except Exception as e:
+            print("something wrong with json parsing")
+            print(e)
+
+
     @property
     def fileout(self):
         #video_name = self.filename.split("_")
         #return video_name[0] + "." + video_name[1]
+        if self.metadata == None: # more effiecient ig?
+            self.metadata = self.get_metadata()
+
         raw_json  = self.metadata
-        raw_json  = raw_json.replace("\'","\"")
+        raw_json  = self.clean_json(raw_json)
         raw_json = json.loads(raw_json)
 
         out_filename = raw_json["filename"]
         return out_filename
 
-    
-
-
     @property
-    def metadata(self)->str:
+    def pixel_size(self)->int:
+        
+     
+        
+        #if self.metadata ==None:
+        #    self.metadata = self.get_metadata()
+
+        mdata = self.metadata
+
+        #mdata = json.loads(self.metadata)
+        mdata = self.clean_json(self.metadata)
+        
+        pix_size = json.loads(mdata)
+        pix_size = pix_size["pixel_size"]
+        #return self.clean_json(mdata)
+        return pix_size
+        
+
+
+    #@property
+    def get_metadata(self)->str:
         mdataFramePath = os.path.join(self.extraction_folder,"frame0.png")
         if not os.path.exists(mdataFramePath):
             print("metadata frame not found i.e frame0.png not found")
             print(f"extracting frames from {self.filename}")
             self.extract_frames()
-        print(f"metadata frame found at: {self.extraction_folder}/")
-        
+        #print(f"metadata frame found at: {self.extraction_folder}/frame0.png")
+        #print(f"current working directory:{os.getcwd()}")
         im = Image.open(os.path.join(self.extraction_folder,"frame0.png"))
         #width,height =im.size
         #pixels = im.load()
+        
+        #str_mdata = None
+        
+        str_mdata = self.get_pixel_values(im,True) # set single frame to true
         try:
             str_mdata = self.get_pixel_values(im,True) # set single frame to true
         
@@ -56,9 +93,14 @@ class Decoder:
             print("something wrong with the metadata extraction:")
             print(e)
 
-        return str_mdata
+        return str(str_mdata)
         #return "lmao get rekt"
+
     
+
+
+
+
     def extract_frames(self):
         #output pattern to take the video and convert to frames
         if not os.path.exists(self.extraction_folder):
@@ -173,7 +215,10 @@ class Decoder:
         data_bits=[] # empty list for appending bit by bit
         binary_bytes=[] # ignore this
         check=1 # this for getting yeeted out of loop
-
+        pixel_size = self.pixel_size
+        #pixel_size=4
+        pixel_size = int(math.sqrt(pixel_size))
+        
         for x in range(0,width,2):
             if not check:
                 break
@@ -185,7 +230,7 @@ class Decoder:
                 g_list=[]
                 b_list=[]
 
-                for i in range(2):
+                for i in range():
                     for j in range(2):
                         r,g,b = pixels[(x+j,y+i)]
                         r_list.append(r)
@@ -239,5 +284,82 @@ class Decoder:
                         data_bits.append(curr_bit)
                     except e:
                         print(e)
-        
+        # will return the bits in case its not just one frame like in case of metadata frame
         return data_bits
+    
+    # alternate decoder for frames
+    def alt_pix_decoder(self,image:Image,single_frame:bool=True):
+
+        width,height =im.size
+        pixels = im.load()
+        data_bits=[] # empty list for appending bit by bit
+        binary_bytes=[] # ignore this
+        check=1 # this for getting yeeted out of loop
+        pixel_size = self.pixel_size
+        #pixel_size=4
+        pixel_size = int(math.sqrt(pixel_size))
+
+        pix_limit = len(self.metadata)
+
+        count =0
+
+        #check = 1
+
+        for x in range(0,width,2):
+            if count >= pix_limit:
+                break
+            for y in range(0,height,2):
+                if count >= pix_limit:
+                    break
+                
+                r_list =[]
+                g_list=[]
+                b_list=[]
+
+                for i in range():
+                    for j in range(2):
+                        r,g,b = pixels[(x+j,y+i)]
+                        r_list.append(r)
+                        g_list.append(g)
+                        b_list.append(b)
+
+                r_avg=sum(r_list)/len(r_list)
+                g_avg=sum(g_list)/len(g_list)
+                b_avg=sum(b_list)/len(b_list)
+                
+                pix =(r_avg,g_avg,b_avg)
+                
+                if single_frame and r_avg > 150 and g_avg < 100 and b_avg < 100:
+                    print(f"found red pixel at x:{x} y:{y}")
+                    try:
+                        str_data = ''.join(data_bits)
+                        #str_data = data_bits
+                        #print(''.join(data_bits))
+                        #return str_data
+                        #exit()
+                        for i in range(0,len(str_data),8):
+                            byte = int(str_data[i:i+8],2) # type: ignore
+                            binary_bytes.append(chr(byte)) # type: ignore
+                        #binary_bytes = bytes(binary_bytes)# dont remove this else it wont do the chr conversion thingy
+                        #binary_bytes = binary_bytes # why dis idek forgor
+                        #return str_data
+                        return str(''.join(binary_bytes))
+                    except Exception as e:
+                        print("something wrong with reading bytes")
+                        print(e)
+                    
+                    
+                    
+                else:
+                    curr_bit =None
+                    
+                    if pix <= (80,80,80):
+                        curr_bit = "1"
+                    else:
+                        curr_bit = "0"
+                    try:
+                        data_bits.append(curr_bit)
+                    except e:
+                        print(e)
+        
+        

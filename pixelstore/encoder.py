@@ -32,7 +32,7 @@ class Encoder:
 
         
     """
-    def __init__(self,filename,fps=6,pix_size=4,res=Resolutions.res_480p,frame_folder="data",output_folder="output"):
+    def __init__(self,filename,fps=24,pix_size=4,res=Resolutions.res_480p,frame_folder="data",output_folder="output"):
         self.filename = filename
         self.frame_folder = frame_folder
         self.output_folder=output_folder
