@@ -7,7 +7,7 @@ import json
 import math
 import cv2
 import numpy
-
+import functools
 
 #comment out the imports when pushing code
 
@@ -19,8 +19,13 @@ class Decoder:
         self.extraction_folder=frame_folder # the output folder for the frames? the embedded_file
         
         #fileout
-        self.metadata = self.get_metadata() # this instead of @property as the @property keeps calling function
+        #self.metadata = self.get_metadata() # this instead of @property as the @property keeps calling function
+        #self.metadata = metadata # this instead of @property as the @property keeps calling function
+        #if not self.metadata:
+        #    self.metadata = self.get_metadata()
+        #self.metadata = "lmaoaoa"
 
+    # this function replaces the ' with " so the json.loads doesnt shit itself
     def clean_json(self,raw_json:str)->str:
         if raw_json == None:
             print("json is None")
@@ -48,7 +53,7 @@ class Decoder:
         out_filename = raw_json["filename"]
         return out_filename
 
-    @property
+    #@property
     def pixel_size(self)->int:
         
      
@@ -56,7 +61,7 @@ class Decoder:
         #if self.metadata ==None:
         #    self.metadata = self.get_metadata()
 
-        mdata = self.metadata
+        #mdata = self.metadata
 
         #mdata = json.loads(self.metadata)
         mdata = self.clean_json(self.metadata)
@@ -68,8 +73,9 @@ class Decoder:
         
 
 
-    #@property
-    def get_metadata(self)->str:
+    @functools.cached_property
+    #def get_metadata(self)->str:
+    def metadata(self)->str:
         mdataFramePath = os.path.join(self.extraction_folder,"frame0.png")
         if not os.path.exists(mdataFramePath):
             print("metadata frame not found i.e frame0.png not found")

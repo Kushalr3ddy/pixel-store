@@ -5,9 +5,8 @@ import json
 import math
 import cv2
 import numpy
-
-
-#from .resolutions import Resolutions
+import functools
+#from .resolutions import Resolutions # this import not working idek why
 #from .color import Colors
 
 
