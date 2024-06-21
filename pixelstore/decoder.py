@@ -53,7 +53,7 @@ class Decoder:
         out_filename = raw_json["filename"]
         return out_filename
 
-    #@property
+    @property
     def pixel_size(self)->int:
         
      
