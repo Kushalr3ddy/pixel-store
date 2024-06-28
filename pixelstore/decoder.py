@@ -222,8 +222,8 @@ class Decoder:
         data_bits=[] # empty list for appending bit by bit
         binary_bytes=[] # ignore this
         check=1 # this for getting yeeted out of loop
-        pixel_size = self.pixel_size
-        #pixel_size=4
+        #pixel_size = self.pixel_size # this geh shit causing the recursion problem
+        pixel_size=4 # for now keep this fixed to 4 pixels
         pixel_size = int(math.sqrt(pixel_size))
         
         for x in range(0,width,2):
@@ -237,8 +237,8 @@ class Decoder:
                 g_list=[]
                 b_list=[]
 
-                for i in range():
-                    for j in range(2):
+                for i in range(pixel_size):
+                    for j in range(pixel_size):
                         r,g,b = pixels[(x+j,y+i)]
                         r_list.append(r)
                         g_list.append(g)
