@@ -73,8 +73,9 @@ class Decoder:
         
 
 
-    @functools.cached_property
+    #@functools.cached_property
     #def get_metadata(self)->str:
+    @property
     def metadata(self)->str:
         mdataFramePath = os.path.join(self.extraction_folder,"frame0.png")
         if not os.path.exists(mdataFramePath):
