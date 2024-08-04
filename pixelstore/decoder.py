@@ -26,7 +26,7 @@ class Decoder:
         #self.metadata = "lmaoaoa"
 
     # this function replaces the ' with " so the json.loads doesnt shit itself
-    def clean_json(self,raw_json:str)->str:
+    def clean_json(self,raw_json:str):
         if raw_json == None:
             print("json is None")
             return
@@ -295,7 +295,7 @@ class Decoder:
         return data_bits
     
     # alternate decoder for frames
-    def alt_pix_decoder(self,image:Image,single_frame:bool=True):
+    def alt_pix_decoder(self,im:Image,single_frame:bool=True):
 
         width,height =im.size
         pixels = im.load()
