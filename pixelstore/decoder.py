@@ -23,7 +23,7 @@ class Decoder:
         #self.metadata = metadata # this instead of @property as the @property keeps calling function
         #if not self.metadata:
         #    self.metadata = self.get_metadata()
-        #self.metadata = "lmaoaoa"
+        #self.metadata = "lmao"
 
     # this function replaces the ' with " so the json.loads doesnt shit itself
     def clean_json(self,raw_json:str):

@@ -32,7 +32,7 @@ class Encoder:
 
         
     """
-    def __init__(self,filename,fps=24,pix_size=4,res=Resolutions.res_480p,frame_folder="data",output_folder="output"):
+    def __init__(self,filename,fps=24,pix_size=4,res=Resolutions.res_480p,frame_folder="generated_frames",output_folder="output"):
         self.filename = filename
         self.frame_folder = frame_folder
         self.output_folder=output_folder
@@ -44,8 +44,8 @@ class Encoder:
         self.pix_size = pix_size # make sure the pix_sizes are only squares i.e 4,9,16.... and that they should divide the height and width perfectly
         self.res = res
         #below are the coordinate of the end pixel after the content bits are finished
-        self.end_x =0
-        self.end_y =0
+        self.end_x =-1 # keeping this as -1 cause 0 is a valid coordinate and decoder starts biching if its set to None
+        self.end_y =-1 # keeping this as -1 cause 0 is a valid coordinate and decoder starts biching if its set to None
         self.no_of_frames=1
         
     
@@ -83,7 +83,7 @@ class Encoder:
         #filename_ext_pixsize_.avi
         #filename = file_name +"_"+ extension.strip(".") +"_"+ self.pix_size  +"_"+".avi"
         filename = file_name +".avi"
-        #filename = file_name +".mp4"
+         #filename = file_name +".mp4"
         return os.path.join(filename)
         
     @staticmethod # needs limit and error checking 
@@ -92,8 +92,7 @@ class Encoder:
             for j in range(pix_size):
                 image.putpixel((x+j,y+i),pix_color)
 
-    def generate_frame(self):#ignore these empty functions for now
-        pass
+  
     
     
     #first frame for storing the metadata
@@ -119,8 +118,6 @@ class Encoder:
         
                 Encoder.etchpixel(mdata_frame,x,y,pix_color,pix_size)
                 
-                
-                
                 endx=x
                 endy=y
                 mindex+=1
@@ -132,8 +129,9 @@ class Encoder:
             endx+=1
             endy=0
         
-        pix_color = Colors.red
-        Encoder.etchpixel(mdata_frame,endx,endy,pix_color,pix_size)
+        #encode the end red pixel in the metadata(first) frame
+        #pix_color = Colors.red
+        #Encoder.etchpixel(mdata_frame,endx,endy,pix_color,pix_size)
         mdata_frame.save(os.path.join(self.frame_folder,f"frame0.png"))
         
         
@@ -234,7 +232,7 @@ class Encoder:
         Encoder.etchpixel(image,x=x,y=y,pix_color=pix_color,pix_size=pix_size)
         #image.save(f'data/encoded{last_frame}.png')
         image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
-        #self.create_video()
+        self.create_video()
 
         
     # function to create the video
@@ -268,7 +266,7 @@ class Encoder:
             video.write(cv2.imread(os.path.join(self.frame_folder, f"frame{image}.png"))) # type:ignore
 
         #this is unnecessary
-        outpath =os.path.join(self.frame_folder,self.fileout)
+        outpath =os.path.join(self.output_folder,self.fileout)
         print(f"saved the video to :{outpath}")
     
     
@@ -284,8 +282,10 @@ class Encoder:
         """
         file_hash = hash_gen.get_md5(self.filename) #checksum of the original file
         metadataBytes=[] # ignore this for now
+        if self.end_y == -1 or self.end_x == -1:
+            print("metadata not getting updated dumbfuk")
+            
         _metadata = {
-                    "pixel_size":self.pix_size,
                     "end_x" : self.end_x,
                     "end_y":self.end_y,
                     "filename":self.filename,
