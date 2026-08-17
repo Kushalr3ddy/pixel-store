@@ -12,9 +12,9 @@ import numpy
 import hashlib
 #comment out the imports when pushing code
 
-# side length (in pixels) of each metadata cell. Kept large & fixed so the
-# metadata frame is extremely robust to compression and the decoder can read
-# it WITHOUT knowing the data pix_size (which is stored inside the metadata).
+# how many pixels wide each metadata bit is
+# keeping this big and fixed so the metadata frame doesnt get wrecked by compression
+# also the decoder can read this even before it knows the actual data pix_size (thats stored inside the metadata itself lmao chicken and egg)
 METADATA_CELL = 8
 
 class Encoder:
@@ -37,9 +37,9 @@ class Encoder:
 
         
     """
-    # pix_size is the number of pixels per bit-cell; MUST be a perfect square
-    # (4->2x2, 16->4x4, 64->8x8). Default 16 (4x4) survives YouTube-grade
-    # H.264 bitrate caps; use 4 only for guaranteed-lossless transports.
+    # pix_size = how many pixels make up one bit; keep it a perfect square (4->2x2, 16->4x4, 64->8x8)
+    # bumped the default from 4 to 16 cause 2x2 cells get diluted to death by youtube compression
+    # 4x4 survives the youtube bitrate cap; only drop back to 4 if youre sure the video stays lossless
     def __init__(self,filename,fps=24,pix_size=16,res=Resolutions.res_480p,frame_folder="generated_frames",output_folder="output"):
         self.filename = filename
         self.frame_folder = frame_folder
@@ -111,10 +111,10 @@ class Encoder:
         mindex =0 # index for the metadata string
         endx = 0
         endy=0
-        # metadata always uses the fixed robust cell size, NOT the data pix_size
+        # metadata frame always uses the fat fixed cell size, NOT the data pix_size (else decoder cant read it)
         pix_size = METADATA_CELL
 
-        # compute the metadata bitstring ONCE (the property re-hashes the file on every access)
+        # grab the metadata bitstring ONCE here, the property re hashes the whole file every single time you touch it so calling it in the loop condition was hashing bigc like 900 times lmao
         mdata = self.metadata
         for x in range(0,width,pix_size):
             if mindex == len(mdata):
@@ -183,16 +183,18 @@ class Encoder:
         image = Image.new('RGB', (width, height), color='white')
         
         #determine the no of frames
-        # each bit is painted as a pix_size block, so a frame holds total_pixels/pix_size bits
+        # bits_per_frame = how many bits actually fit in one frame. each bit eats pix_size pixels not 1, so its total_pixels/pix_size NOT total_pixels
+        # this is what the old code got wrong and thats why big files got chopped down to a single frame
         bits_per_frame = total_pixels // self.pix_size
+        # no_of_frames = ceil of bits/bits_per_frame, ceil so the leftover bits that dont fill a whole frame still get their own frame
         self.no_of_frames = math.ceil(len(content) / bits_per_frame)
 
         #print(f"no of frames required:{no_of_frames}")
         print(f"using folder:{os.path.join(self.frame_folder)} to store the frames")
         #exit(0)
-        # NOTE: metadata (frame0) is embedded AFTER the data loop below,
-        # because it needs the real end_x/end_y and the total bit count.
-
+        # NOTE metadata (frame0) used to be embedded here BEFORE the loop and thats why it was always trash
+        # end_x/end_y and nbits dont exist yet at this point, they only get filled while encoding
+        # so moved the embed_mdata() call to AFTER the loop, look below
         for frame in range(1,self.no_of_frames+1):
             last_frame=frame
             #create a blank white image and overwrite the pixel values
@@ -226,12 +228,12 @@ class Encoder:
             #image.save(f'data/encoded{frame}.png')
             image.save(os.path.join(png_folder,f"frame{frame}.png"))
 
-        # the actual number of data frames written (may be < no_of_frames if we broke early)
+        # last_frame = the real no of frames we actually wrote, can be less than no_of_frames if we hit the end of the bits and broke early
         self.no_of_frames = last_frame
-        # total number of data bits encoded; the decoder truncates to this exact count
+        # nbits = exact count of data bits we wrote. the last frame is padded with white so without this the decoder cant tell the real bits from the padding
         self.nbits = count
 
-        # now that end_x/end_y and nbits are final, write the metadata frame (frame0)
+        # NOW end_x/end_y and nbits are actually filled so its safe to write the metadata frame (frame0)
         self.embed_mdata()
         self.create_video()
 
@@ -260,9 +262,11 @@ class Encoder:
         if not os.path.exists(self.output_folder):
             os.mkdir(self.output_folder)
             
+        # video_name = where the avi gets dumped. the 0 in VideoWriter is the fourcc = raw/uncompressed so we dont lose bits at this stage
         video_name = os.path.join(self.output_folder,self.fileout)
         video = cv2.VideoWriter(video_name, 0, self.fps, (width,height)) # type:ignore
-        # write frame0 (metadata) through frame{no_of_frames} (last data frame), inclusive
+        # gotta go +1 here, frames on disk are frame0(metadata) upto frame{no_of_frames}(last data frame) so range needs to include the last one
+        # old code did range(0,no_of_frames) and silently dropped the final data frame lol
         for image in range(0,self.no_of_frames+1):
             video.write(cv2.imread(os.path.join(self.frame_folder, f"frame{image}.png"))) # type:ignore
         video.release()
@@ -289,13 +293,13 @@ class Encoder:
         _metadata = {
                     "end_x" : self.end_x,
                     "end_y":self.end_y,
-                    "nbits": getattr(self, "nbits", 0), # exact number of data bits (decoder truncates to this)
-                    "pix_size": self.pix_size, # so the decoder knows the DATA cell size
-                    "filename":os.path.basename(self.filename),
-                    "checksum":file_hash # this is for checking file integrity
+                    "nbits": getattr(self, "nbits", 0), # exact no of data bits, decoder cuts the bitstream down to this so the white padding at the end doesnt get turned into junk bytes
+                    "pix_size": self.pix_size, # tell the decoder the data cell size, without this it would just guess 2x2 and desync the whole file
+                    "filename":os.path.basename(self.filename), # basename only, dont want ./ or full paths ending up in the output name
+                    "checksum":file_hash # md5 of the original file so decoder can check it came out clean
                     }
 
-        # emit VALID json (double quotes) so the decoder's json.loads doesn't choke
+        # json.dumps not str(dict), str gives single quotes and json.loads on the decoder side shits itself on those
         _metadata = json.dumps(_metadata)
 
         for char in _metadata:

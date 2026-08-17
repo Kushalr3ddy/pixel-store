@@ -11,8 +11,8 @@ from functools import lru_cache
 
 OUTPUT_FOLDER = "decoded_files"
 EXTRACTION_FOLDER = "extracted_frames"
-PIXEL_SIZE = 4 # legacy fallback for videos that predate pix_size-in-metadata
-METADATA_CELL = 8 # MUST match Encoder.METADATA_CELL (metadata frame cell size)
+PIXEL_SIZE = 4 # only a fallback now for old videos that dont have pix_size in their metadata, real cell size comes from the metadata frame
+METADATA_CELL = 8 # HAS to be the same as Encoder.METADATA_CELL or the metadata frame reads as garbage
 
 # instantiate Decoder with video filename
 # extract all frames +done
@@ -64,12 +64,12 @@ class Decoder:
         video_file_reader.release()
 
     # function for extracting data from the frame
-    # cell_px = side length of each bit-cell in pixels; MUST match the encoder
+    # cell_px = how many pixels wide one bit is, gotta be the exact same value the encoder used or every bit lands in the wrong place
     def extract_data_from_frame(self,frame:Image,cell_px:int=None,end_x = None,end_y = None, final_frame:bool=False)->str:
 
         pixels = frame.load() # this will return a list of tuples with rgb values
         width, height = frame.size
-        # cell side length in pixels (data frames pass this in from metadata)
+        # pix_len = the cell side in pixels. data frames hand this in from the metadata, if nobody passes it fall back to the old hardcoded value
         pix_len = cell_px if cell_px is not None else int(math.sqrt(PIXEL_SIZE))
 
         frame_bits =""
@@ -139,25 +139,27 @@ class Decoder:
         if not os.path.exists(OUTPUT_FOLDER):
             os.mkdir(OUTPUT_FOLDER)
             
-        binary_bytes = []
-        metadata = json.loads(metadata)
-        filename = metadata["filename"]
+        binary_bytes = [] # the raw bytes we rebuild from the bit string
+        metadata = json.loads(metadata) # metadata comes in as a json string, load it back into a dict
+        filename = metadata["filename"] # what to name the output file, taken from the metadata
+        # walk the bits 8 at a time and turn each chunk back into one byte
         for i in range(0,len(raw_bits),8):
             byte = int(raw_bits[i:i+8],2) # type: ignore
             binary_bytes.append(byte)
-        binary_bytes = bytes(binary_bytes)
+        binary_bytes = bytes(binary_bytes) # list of ints -> actual bytes object so we can dump it to disk
         filename = os.path.join(OUTPUT_FOLDER,filename)
         with open(filename, "wb") as file:
             file.write(binary_bytes)
             print("done writing file")
 
-        # verify integrity against the checksum stored in the metadata frame
+        # expected = the md5 the encoder stored in the metadata frame. compare it against what we actually rebuilt to know if the decode came out clean
         expected = metadata.get("checksum")
         if expected is not None:
-            actual = hashlib.md5(binary_bytes).hexdigest()
+            actual = hashlib.md5(binary_bytes).hexdigest() # md5 of the file we just wrote
             if actual == expected:
                 print(f"checksum OK ({actual})")
             else:
+                # if these dont match some bits flipped somewhere (usually lossy compression eating the cells)
                 print(f"checksum MISMATCH expected {expected} got {actual}")
             
         
@@ -165,32 +167,32 @@ class Decoder:
     # function to decode data extracted from all the frames
 
     def decode_data(self):
-        file_bits = ""
-        metadata_frame_path = os.path.join(self.extraction_folder,"frame0.png")
+        file_bits = "" # all the data bits from every frame get piled up here
+        metadata_frame_path = os.path.join(self.extraction_folder,"frame0.png") # frame0 is always the metadata frame
         if not os.path.exists(metadata_frame_path):
             print("metadata frame not found.exiting....")
             exit()
 
-        no_of_frames = len(os.listdir(self.extraction_folder))
+        no_of_frames = len(os.listdir(self.extraction_folder)) # how many frames got extracted, counts frame0 too
 
         if no_of_frames < 2:
             print("only one frame found.\nexiting...")
 
-        # decode the metadata frame (frame0) at the FIXED metadata cell size
+        # read frame0 at the fat METADATA_CELL size, has to be the fixed size cause we dont know the data pix_size yet
         m_data_bits = self.extract_data_from_frame(Image.open(metadata_frame_path), cell_px=METADATA_CELL)
-        mdata = self.conv_metadata(m_data_bits)
-        metadata = json.loads(mdata)
+        mdata = self.conv_metadata(m_data_bits) # turn those bits into the metadata string
+        metadata = json.loads(mdata) # and load it into a dict
         print(f"metadata: {metadata}")
 
-        # the data frames were painted at this cell size (px per side)
+        # data_cell = pixels per side for the DATA frames, pulled from metadata. sqrt cause pix_size is the pixel count (16 -> 4x4). old videos with no pix_size fall back to PIXEL_SIZE
         data_cell = int(math.sqrt(metadata.get("pix_size", PIXEL_SIZE)))
 
-        # decode every data frame in order: frame1 .. frame{no_of_frames-1}
+        # now read every actual data frame (frame1 to the last one) at the data cell size and glue the bits together
         for frame in range(1, no_of_frames):
             current_image = Image.open(os.path.join(self.extraction_folder,f"frame{frame}.png"))
             file_bits += self.extract_data_from_frame(current_image, cell_px=data_cell)
 
-        # keep only the real payload bits; the last frame is padded out with white (zero) cells
+        # nbits = the real bit count from metadata. the last frame is padded with white so chop the bitstream back down to this or youll get extra junk bytes at the end
         nbits = metadata.get("nbits")
         if nbits is not None:
             file_bits = file_bits[:nbits]
