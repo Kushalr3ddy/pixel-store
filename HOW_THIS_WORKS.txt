@@ -1,0 +1,159 @@
+========================================================================
+ PIXEL-STORE : explained like youre a dumbfuck (affectionate)
+========================================================================
+
+WHAT IS THIS THING
+------------------
+You want to store a file (a pdf, a zip, whatever) but you dont want to pay
+for storage. Idea: turn the file into a VIDEO made of black and white
+squares, upload that video to youtube (free unlimited hosting lol), and
+later download the video and turn it back into the original file.
+
+Thats it. The file becomes a video. The video becomes the file again.
+
+
+THE ONE KEY IDEA
+----------------
+Every file is just a big pile of BYTES. Every byte is 8 BITS. Every bit is
+either a 0 or a 1. So a file is really just a giant string like:
+        0100100 1  0110 0001  ...
+We paint each bit as a little square on a video frame:
+        1  ->  BLACK square
+        0  ->  WHITE square
+Fill up a frame with squares, start a new frame when it runs out, string all
+the frames together = video. Done.
+
+To get the file back you just look at each square: black = 1, white = 0,
+glue the bits back into bytes, write the bytes to a file. Reverse of above.
+
+
+WALKING THROUGH ENCODING (file -> video)   [pixelstore/encoder.py]
+------------------------------------------------------------------
+1. Read every byte of the file.
+2. (NEW) Wrap it in reed-solomon parity -- explained way below, ignore for now.
+3. Turn every byte into its 8 bits -> one huge string of 0s and 1s.
+4. Paint the bits onto frames as black/white squares.
+5. Frame 0 is SPECIAL -> its the "metadata" frame (a little note to self,
+   explained below).
+6. Smash all the frames into one video file (an .avi). We use a RAW,
+   uncompressed video here so we dont lose anything yet.
+
+
+WALKING THROUGH DECODING (video -> file)   [pixelstore/decodr.py]
+----------------------------------------------------------------
+1. Split the video back into frames (frame0, frame1, frame2...).
+2. Read frame0 (the metadata note) first. It tells us everything we need.
+3. Read every other frame square-by-square: black=1, white=0.
+4. Glue the bits back into bytes.
+5. (NEW) Use the reed-solomon parity to REPAIR any messed up bytes, then
+   throw the parity away.
+6. Write the bytes to a file. Check the md5 to make sure it came out perfect.
+
+
+THE METADATA FRAME (frame0) -- the "note to self"
+-------------------------------------------------
+When decoding we need to know some stuff, so the encoder writes it into the
+very first frame as squares, same black/white trick. It stores:
+  - filename   : what to name the file when we rebuild it
+  - nbits      : EXACTLY how many bits are real data (see "padding" below)
+  - pix_size   : how big each square is (see "why squares are big" below)
+  - parity     : how much reed-solomon safety we added
+  - checksum   : the md5 of the original file, to verify we got it right
+  - end_x/end_y: where the last bit sits (leftover info, not critical anymore)
+
+The metadata frame always uses BIG squares (8x8 pixels) so it never gets
+damaged -- we HAVE to be able to read it, its the instructions for everything
+else.
+
+
+"PADDING" -- why we store nbits
+-------------------------------
+The last frame almost never fills up perfectly. The leftover space is left
+white. White = 0 = fake bits that arent part of your file. If we didnt know
+where the real data ends wed glue those fake 0s onto your file and corrupt
+it. So we store nbits = the exact real bit count, and chop off everything
+after that. Simple.
+
+
+WHY THE SQUARES ARE BIG (this is the whole youtube saga)
+--------------------------------------------------------
+Originally each bit was a tiny 2x2 pixel square. That works PERFECTLY if the
+video stays lossless. But youtube COMPRESSES your video to save space, and
+compression smears colors around. A tiny black square surrounded by white
+gets "diluted" toward grey. Now black and white both look grey-ish and you
+cant tell them apart -> file ruined. This is exactly where the project died
+the first time.
+
+The fix: make each square BIGGER (4x4 pixels, thats pix_size=16). A bigger
+square survives the smearing because theres more of it -- the middle stays
+solidly black or white even after compression chews the edges. Tested it:
+  - 2x2 squares through youtube-style compression -> ~1100 bits flipped, dead
+  - 4x4 squares through the SAME compression       -> 0 bits flipped, perfect
+Bigger squares = fewer bits per frame = bigger video, but it actually works.
+
+Also the old decoder used a broken brightness cutoff (it checked if a color
+was "below 80" which is nearly pure black). Compression pushes blacks up to
+like 100-128, so those got misread as white. Now we cut at 128 (dead middle
+between black 0 and white 255) which is the correct call.
+
+
+REED-SOLOMON (the ECC / "self-repair" layer)   [pixelstore/ecc.py]
+------------------------------------------------------------------
+The md5 checksum can only TELL you the file broke. It cant FIX it. One wrong
+bit = whole file is trash, go re-download. Annoying.
+
+Reed-solomon is math that adds "parity" bytes -- basically smart backup info.
+Its the same tech in QR codes, CDs and DVDs (thats why a scratched disc still
+plays). We add 32 parity bytes for every 223 bytes of your file. In return it
+can FULLY REPAIR up to 16 wrong bytes in every 255-byte chunk. Costs about
+14% extra size.
+
+So the layers stack up:
+  - big squares      -> make very few bits flip in the first place
+  - reed-solomon     -> repair the few that still flip
+Together = your file survives real youtube, not just a clean test.
+
+Tested it: vandalized 150 squares in a frame.
+  - without reed-solomon -> file corrupt
+  - with reed-solomon    -> repaired, byte-perfect
+
+Turn it off with parity=0 if youre on a lossless channel and want max storage.
+
+
+HOW TO ACTUALLY RUN IT
+----------------------
+Install stuff (once):
+    pip install -r requirements.txt
+
+Encode a file into a video:
+    from pixelstore.encoder import Encoder
+    Encoder("dummy.pdf").encode()          # makes output/dummy.avi
+
+Decode the video back into the file:
+    from pixelstore.decodr import Decoder
+    Decoder("output/dummy.avi").decode_data()   # makes decoded_files/dummy.pdf
+
+Knobs you can turn:
+    Encoder("dummy.pdf", pix_size=64)   # 8x8 squares, even tougher, bigger video
+    Encoder("dummy.pdf", parity=0)      # no error correction, smallest size
+    Encoder("dummy.pdf", parity=64)     # double the repair power
+
+
+THE FILES
+---------
+    pixelstore/encoder.py   -> file  -> video
+    pixelstore/decodr.py    -> video -> file  (this is the real one)
+    pixelstore/decoder.py   -> OLD dead decoder, ignore it
+    pixelstore/ecc.py       -> reed-solomon repair helpers (new)
+    pixelstore/color.py     -> which colors mean 0 and 1
+    pixelstore/resolutions.py -> frame sizes (480p etc.)
+    pixelstore/hash_gen.py  -> md5/sha1 checksums
+
+
+TL;DR
+-----
+File -> bits -> black/white squares -> video -> youtube.
+Youtube back -> video -> squares -> bits -> file.
+Big squares so compression doesnt kill it. Reed-solomon so a few errors get
+auto-repaired. md5 at the end to prove it came out identical.
+========================================================================
