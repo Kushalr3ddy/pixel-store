@@ -2,6 +2,7 @@ from pixelstore.resolutions import Resolutions
 from pixelstore.color import Colors
 
 from pixelstore import hash_gen
+from pixelstore import ecc
 from PIL import Image
 import os
 
@@ -40,11 +41,13 @@ class Encoder:
     # pix_size = how many pixels make up one bit; keep it a perfect square (4->2x2, 16->4x4, 64->8x8)
     # bumped the default from 4 to 16 cause 2x2 cells get diluted to death by youtube compression
     # 4x4 survives the youtube bitrate cap; only drop back to 4 if youre sure the video stays lossless
-    def __init__(self,filename,fps=24,pix_size=16,res=Resolutions.res_480p,frame_folder="generated_frames",output_folder="output"):
+    def __init__(self,filename,fps=24,pix_size=16,parity=ecc.DEFAULT_PARITY,res=Resolutions.res_480p,frame_folder="generated_frames",output_folder="output"):
         self.filename = filename
         self.frame_folder = frame_folder
         self.output_folder=output_folder
-        
+
+        # parity = reed-solomon parity bytes per block, gets set BEFORE rip_bytes cause rip_bytes uses it to add the ECC. set 0 to turn ECC off
+        self.parity = parity
         self.ripped_bytes = self.rip_bytes() # size of file in no of bits where total_bits = total_bytes*8
         self.size = len(self.ripped_bytes) *8 # size of file in no of bits where total_bits = total_bytes*8
         #self.fileout =fileout
@@ -59,27 +62,22 @@ class Encoder:
     
         
         
-    # function to rip the bytes from a file and convert it into an array of bytes
+    # function to rip the bytes from a file and convert it into an array of 8 bit strings
     def rip_bytes(self)->list:
         file = open(self.filename,"rb")
         print(f"reading bytes from:{file.name}")
-        raw_bytes =file.read(1)# reads the first byte of a file
-        bit_sequence = []
-        padded_bytes=[] # irrelevant for now
-        count =0
-        while raw_bytes: # reads a file till the bytes run out
-            curr_byte = bin(int.from_bytes(raw_bytes,byteorder="big"))
-            curr_byte = curr_byte[2:]
-            if len(curr_byte) < 8:
-                # fill up the lsb so if a byte is 1010 it will become 00001010
-                # this is done so it becomes 8 bits ie one whole byte for easy parsing later on
-                curr_byte = curr_byte.zfill(8) # check if this affects the checksum
-                padded_bytes.append(count)
-            #print((curr_byte))#,end=" ")
-            raw_bytes = file.read(1)
-            bit_sequence.append(curr_byte)
-            count+=1
+        # raw = every byte of the file in one go
+        raw = file.read()
         file.close()
+        # slap the reed-solomon parity bytes on here so the whole encoded stream (data+parity) becomes pixels. decoder peels these off + uses them to repair errors
+        raw = ecc.rs_encode(raw, self.parity)
+
+        bit_sequence = [] # each element is one byte as an 8 char string like "01001010"
+        # turn every byte into its 8 bit binary string
+        for b in raw:
+            # curr_byte = this byte in binary. zfill(8) pads short ones like 1010 -> 00001010 so every byte is exactly 8 bits for clean parsing later
+            curr_byte = bin(b)[2:].zfill(8)
+            bit_sequence.append(curr_byte)
         return bit_sequence
     
     #the output video file
@@ -295,6 +293,7 @@ class Encoder:
                     "end_y":self.end_y,
                     "nbits": getattr(self, "nbits", 0), # exact no of data bits, decoder cuts the bitstream down to this so the white padding at the end doesnt get turned into junk bytes
                     "pix_size": self.pix_size, # tell the decoder the data cell size, without this it would just guess 2x2 and desync the whole file
+                    "parity": self.parity, # how many reed-solomon parity bytes we used, decoder needs the exact same number to undo the ECC and repair errors
                     "filename":os.path.basename(self.filename), # basename only, dont want ./ or full paths ending up in the output name
                     "checksum":file_hash # md5 of the original file so decoder can check it came out clean
                     }

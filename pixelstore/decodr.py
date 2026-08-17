@@ -1,6 +1,7 @@
 from pixelstore.resolutions import Resolutions
 from pixelstore.color import Colors
 
+from pixelstore import ecc
 from PIL import Image
 import os
 import json
@@ -139,14 +140,23 @@ class Decoder:
         if not os.path.exists(OUTPUT_FOLDER):
             os.mkdir(OUTPUT_FOLDER)
             
-        binary_bytes = [] # the raw bytes we rebuild from the bit string
+        binary_bytes = [] # the raw bytes we rebuild from the bit string (still has the reed-solomon parity on it at this point)
         metadata = json.loads(metadata) # metadata comes in as a json string, load it back into a dict
         filename = metadata["filename"] # what to name the output file, taken from the metadata
         # walk the bits 8 at a time and turn each chunk back into one byte
         for i in range(0,len(raw_bits),8):
             byte = int(raw_bits[i:i+8],2) # type: ignore
             binary_bytes.append(byte)
-        binary_bytes = bytes(binary_bytes) # list of ints -> actual bytes object so we can dump it to disk
+        binary_bytes = bytes(binary_bytes) # list of ints -> actual bytes object
+
+        # THIS is where the magic happens: use the reed-solomon parity to repair any bits youtube flipped, then strip the parity back off to get the original file
+        # parity comes from metadata so we undo exactly what the encoder did. if too many bytes are wrecked this throws and we just write whatever we got
+        parity = metadata.get("parity", 0)
+        try:
+            binary_bytes = ecc.rs_decode(binary_bytes, parity)
+        except Exception as e:
+            print(f"reed-solomon couldnt fully repair the data ({e}), writing it raw anyway")
+
         filename = os.path.join(OUTPUT_FOLDER,filename)
         with open(filename, "wb") as file:
             file.write(binary_bytes)
