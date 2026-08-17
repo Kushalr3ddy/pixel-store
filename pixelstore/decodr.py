@@ -5,6 +5,7 @@ from PIL import Image
 import os
 import json
 import math
+import hashlib
 import cv2
 from functools import lru_cache
 
@@ -60,8 +61,7 @@ class Decoder:
                 print(f"done extracting {frame_no_count} frames")
                 break
         video_file_reader.release()
-        cv2.destroyAllWindows() # type: ignore
-    
+
     # function for extracting data from the frame
     def extract_data_from_frame(self,frame:Image,end_x = None,end_y = None, final_frame:bool=False)->str:
         
@@ -149,42 +149,46 @@ class Decoder:
         with open(filename, "wb") as file:
             file.write(binary_bytes)
             print("done writing file")
+
+        # verify integrity against the checksum stored in the metadata frame
+        expected = metadata.get("checksum")
+        if expected is not None:
+            actual = hashlib.md5(binary_bytes).hexdigest()
+            if actual == expected:
+                print(f"checksum OK ({actual})")
+            else:
+                print(f"checksum MISMATCH expected {expected} got {actual}")
             
         
         
     # function to decode data extracted from all the frames
-    
+
     def decode_data(self):
-        m_data_bits =""
         file_bits = ""
         metadata_frame_path = os.path.join(self.extraction_folder,"frame0.png")
         if not os.path.exists(metadata_frame_path):
             print("metadata frame not found.exiting....")
             exit()
-        
+
         no_of_frames = len(os.listdir(self.extraction_folder))
-        
+
         if no_of_frames < 2:
             print("only one frame found.\nexiting...")
-        
-        #extract the metadata frame i.e frame0.png
+
+        # decode the metadata frame (frame0) once
         m_data_bits = self.extract_data_from_frame(Image.open(metadata_frame_path))
-        print(self.conv_metadata(m_data_bits))
-        # extract the rest of the frame
-        for frame in range(1,no_of_frames-1):
-            
+        mdata = self.conv_metadata(m_data_bits)
+        metadata = json.loads(mdata)
+        print(f"metadata: {metadata}")
+
+        # decode every data frame in order: frame1 .. frame{no_of_frames-1}
+        for frame in range(1, no_of_frames):
             current_image = Image.open(os.path.join(self.extraction_folder,f"frame{frame}.png"))
             file_bits += self.extract_data_from_frame(current_image)
-        
-        mdata =self.conv_metadata(m_data_bits)
-        
-        # final frame data extraction
-        metadata = json.loads(mdata)
-        
-        end_x = metadata['end_x']
-        end_y = metadata['end_y']
-        file_bits += self.extract_data_from_frame(frame=no_of_frames-1,
-                                                  end_x= end_x
-                                                  ,end_y= end_y)
-        
+
+        # keep only the real payload bits; the last frame is padded out with white (zero) cells
+        nbits = metadata.get("nbits")
+        if nbits is not None:
+            file_bits = file_bits[:nbits]
+
         self.generate_file(file_bits, mdata)

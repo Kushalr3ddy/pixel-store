@@ -105,16 +105,16 @@ class Encoder:
         endy=0
         pix_size = int(math.sqrt(self.pix_size))
 
-        #print(f"length of metadata:{len(self.metadata)}")
-        #exit(0)
+        # compute the metadata bitstring ONCE (the property re-hashes the file on every access)
+        mdata = self.metadata
         for x in range(0,width,pix_size):
-            if mindex == len(self.metadata):
+            if mindex == len(mdata):
                 break
 
             for y in range(0,height,pix_size):
-                if mindex == len(self.metadata):
+                if mindex == len(mdata):
                     break
-                pix_color = Colors.one if self.metadata[mindex] == "1" else Colors.zero
+                pix_color = Colors.one if mdata[mindex] == "1" else Colors.zero
         
                 Encoder.etchpixel(mdata_frame,x,y,pix_color,pix_size)
                 
@@ -173,18 +173,17 @@ class Encoder:
         content=''.join(self.ripped_bytes)#.replace('\n','')
         image = Image.new('RGB', (width, height), color='white')
         
-        #determine the no of frames 
-        #if len(content) > total_pixels:
-        #    no_of_frames = int((len(content)/total_pixels)+1)
-        if len(content) > total_pixels:
-            self.no_of_frames = int((len(content)*self.pix_size/total_pixels))+1
+        #determine the no of frames
+        # each bit is painted as a pix_size block, so a frame holds total_pixels/pix_size bits
+        bits_per_frame = total_pixels // self.pix_size
+        self.no_of_frames = math.ceil(len(content) / bits_per_frame)
 
         #print(f"no of frames required:{no_of_frames}")
         print(f"using folder:{os.path.join(self.frame_folder)} to store the frames")
         #exit(0)
-        #put the metadata frame as frame0
-        self.embed_mdata()
-        
+        # NOTE: metadata (frame0) is embedded AFTER the data loop below,
+        # because it needs the real end_x/end_y and the total bit count.
+
         for frame in range(1,self.no_of_frames+1):
             last_frame=frame
             #create a blank white image and overwrite the pixel values
@@ -217,21 +216,14 @@ class Encoder:
 
             #image.save(f'data/encoded{frame}.png')
             image.save(os.path.join(png_folder,f"frame{frame}.png"))
-                
-        #check where the bits end
-        if self.end_y+pix_size < height:
-            self.end_y+=pix_size
-        else:
-            self.end_x+=1
-            self.end_y=0
-        
-        #put the red pixel after the last bit encoded to indicate the end bit
-        """for i in range(pix_size):
-            for j in range(pix_size):
-                image.putpixel((self.end_x+j, self.end_y+i), red)"""
-        Encoder.etchpixel(image,x=x,y=y,pix_color=pix_color,pix_size=pix_size)
-        #image.save(f'data/encoded{last_frame}.png')
-        image.save(os.path.join(png_folder,f"frame{last_frame}.png"))
+
+        # the actual number of data frames written (may be < no_of_frames if we broke early)
+        self.no_of_frames = last_frame
+        # total number of data bits encoded; the decoder truncates to this exact count
+        self.nbits = count
+
+        # now that end_x/end_y and nbits are final, write the metadata frame (frame0)
+        self.embed_mdata()
         self.create_video()
 
         
@@ -261,11 +253,11 @@ class Encoder:
             
         video_name = os.path.join(self.output_folder,self.fileout)
         video = cv2.VideoWriter(video_name, 0, self.fps, (width,height)) # type:ignore
-        # why n-1 frames is cause the final frame will be put separately
-        for image in range(0,self.no_of_frames):
+        # write frame0 (metadata) through frame{no_of_frames} (last data frame), inclusive
+        for image in range(0,self.no_of_frames+1):
             video.write(cv2.imread(os.path.join(self.frame_folder, f"frame{image}.png"))) # type:ignore
+        video.release()
 
-        #this is unnecessary
         outpath =os.path.join(self.output_folder,self.fileout)
         print(f"saved the video to :{outpath}")
     
@@ -288,12 +280,14 @@ class Encoder:
         _metadata = {
                     "end_x" : self.end_x,
                     "end_y":self.end_y,
-                    "filename":self.filename,
+                    "nbits": getattr(self, "nbits", 0), # exact number of data bits (decoder truncates to this)
+                    "filename":os.path.basename(self.filename),
                     "checksum":file_hash # this is for checking file integrity
                     }
-        
-        _metadata = str(_metadata)
-        
+
+        # emit VALID json (double quotes) so the decoder's json.loads doesn't choke
+        _metadata = json.dumps(_metadata)
+
         for char in _metadata:
         # pad the bytes to 8 bits and append to list
             metadataBytes.append(bin(ord(char))[2:].zfill(8))
