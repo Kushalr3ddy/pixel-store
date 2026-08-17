@@ -1,0 +1,54 @@
+name: roundtrip-test
+
+# encode dummy.pdf into a video, decode it back, and prove the file that
+# comes out is byte-for-byte identical to the one that went in.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:   # lets you run it manually from the Actions tab
+
+jobs:
+  roundtrip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout the repo
+        uses: actions/checkout@v4
+
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # opencv-python needs a few system libs that arent on the runner by default
+      - name: install system libs for opencv
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libglib2.0-0 libsm6 libxext6 libxrender1
+
+      - name: install python deps
+        run: pip install -r requirements.txt
+
+      # STEP 1: get the checksum of the ORIGINAL file (before we touch it) and save it
+      - name: checksum before encoding
+        run: |
+          md5sum dummy.pdf | awk '{print $1}' > original.md5
+          echo "original md5 = $(cat original.md5)"
+
+      # STEP 2: encode the file into a video, then decode that video back into a file
+      - name: encode then decode
+        run: |
+          python -c "from pixelstore.encoder import Encoder; from pixelstore.decodr import Decoder; Encoder('dummy.pdf').encode(); Decoder('output/dummy.avi').decode_data()"
+
+      # STEP 3: checksum the DECODED file with the same tool and compare to the saved one
+      - name: checksum after decoding and compare
+        run: |
+          md5sum decoded_files/dummy.pdf | awk '{print $1}' > decoded.md5
+          echo "original md5 = $(cat original.md5)"
+          echo "decoded  md5 = $(cat decoded.md5)"
+          if [ "$(cat original.md5)" = "$(cat decoded.md5)" ]; then
+            echo "MATCH: the round trip is byte-perfect"
+          else
+            echo "MISMATCH: the round trip corrupted the file"
+            exit 1
+          fi

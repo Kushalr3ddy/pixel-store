@@ -34,3 +34,5 @@ output/
 setup.sh
 generated_frames/
 extraction_folder/decoded_files/
+original.md5
+decoded.md5
