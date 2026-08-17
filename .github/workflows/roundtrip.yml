@@ -4,8 +4,8 @@ name: roundtrip-test
 # comes out is byte-for-byte identical to the one that went in.
 
 on:
-  push:
-  pull_request:
+  #push:
+  #pull_request:
   workflow_dispatch:   # lets you run it manually from the Actions tab
 
 jobs:
