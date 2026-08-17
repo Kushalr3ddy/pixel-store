@@ -11,7 +11,8 @@ from functools import lru_cache
 
 OUTPUT_FOLDER = "decoded_files"
 EXTRACTION_FOLDER = "extracted_frames"
-PIXEL_SIZE = 4 # keep this as 4 itself
+PIXEL_SIZE = 4 # legacy fallback for videos that predate pix_size-in-metadata
+METADATA_CELL = 8 # MUST match Encoder.METADATA_CELL (metadata frame cell size)
 
 # instantiate Decoder with video filename
 # extract all frames +done
@@ -63,14 +64,14 @@ class Decoder:
         video_file_reader.release()
 
     # function for extracting data from the frame
-    def extract_data_from_frame(self,frame:Image,end_x = None,end_y = None, final_frame:bool=False)->str:
-        
+    # cell_px = side length of each bit-cell in pixels; MUST match the encoder
+    def extract_data_from_frame(self,frame:Image,cell_px:int=None,end_x = None,end_y = None, final_frame:bool=False)->str:
+
         pixels = frame.load() # this will return a list of tuples with rgb values
         width, height = frame.size
-        # since each pixel is 2x2 pixels wide i.e 4 pixels take sqrt of 4
-        #KEEP THIS CONST FOR ALL INSTANCES OF DECODER CLASS ELSE PAIN
-        pix_len = int(math.sqrt(PIXEL_SIZE))
-        
+        # cell side length in pixels (data frames pass this in from metadata)
+        pix_len = cell_px if cell_px is not None else int(math.sqrt(PIXEL_SIZE))
+
         frame_bits =""
         
         for x in range(0,width,pix_len):
@@ -175,16 +176,19 @@ class Decoder:
         if no_of_frames < 2:
             print("only one frame found.\nexiting...")
 
-        # decode the metadata frame (frame0) once
-        m_data_bits = self.extract_data_from_frame(Image.open(metadata_frame_path))
+        # decode the metadata frame (frame0) at the FIXED metadata cell size
+        m_data_bits = self.extract_data_from_frame(Image.open(metadata_frame_path), cell_px=METADATA_CELL)
         mdata = self.conv_metadata(m_data_bits)
         metadata = json.loads(mdata)
         print(f"metadata: {metadata}")
 
+        # the data frames were painted at this cell size (px per side)
+        data_cell = int(math.sqrt(metadata.get("pix_size", PIXEL_SIZE)))
+
         # decode every data frame in order: frame1 .. frame{no_of_frames-1}
         for frame in range(1, no_of_frames):
             current_image = Image.open(os.path.join(self.extraction_folder,f"frame{frame}.png"))
-            file_bits += self.extract_data_from_frame(current_image)
+            file_bits += self.extract_data_from_frame(current_image, cell_px=data_cell)
 
         # keep only the real payload bits; the last frame is padded out with white (zero) cells
         nbits = metadata.get("nbits")

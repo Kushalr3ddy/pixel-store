@@ -12,6 +12,11 @@ import numpy
 import hashlib
 #comment out the imports when pushing code
 
+# side length (in pixels) of each metadata cell. Kept large & fixed so the
+# metadata frame is extremely robust to compression and the decoder can read
+# it WITHOUT knowing the data pix_size (which is stored inside the metadata).
+METADATA_CELL = 8
+
 class Encoder:
 
     
@@ -32,7 +37,10 @@ class Encoder:
 
         
     """
-    def __init__(self,filename,fps=24,pix_size=4,res=Resolutions.res_480p,frame_folder="generated_frames",output_folder="output"):
+    # pix_size is the number of pixels per bit-cell; MUST be a perfect square
+    # (4->2x2, 16->4x4, 64->8x8). Default 16 (4x4) survives YouTube-grade
+    # H.264 bitrate caps; use 4 only for guaranteed-lossless transports.
+    def __init__(self,filename,fps=24,pix_size=16,res=Resolutions.res_480p,frame_folder="generated_frames",output_folder="output"):
         self.filename = filename
         self.frame_folder = frame_folder
         self.output_folder=output_folder
@@ -103,7 +111,8 @@ class Encoder:
         mindex =0 # index for the metadata string
         endx = 0
         endy=0
-        pix_size = int(math.sqrt(self.pix_size))
+        # metadata always uses the fixed robust cell size, NOT the data pix_size
+        pix_size = METADATA_CELL
 
         # compute the metadata bitstring ONCE (the property re-hashes the file on every access)
         mdata = self.metadata
@@ -281,6 +290,7 @@ class Encoder:
                     "end_x" : self.end_x,
                     "end_y":self.end_y,
                     "nbits": getattr(self, "nbits", 0), # exact number of data bits (decoder truncates to this)
+                    "pix_size": self.pix_size, # so the decoder knows the DATA cell size
                     "filename":os.path.basename(self.filename),
                     "checksum":file_hash # this is for checking file integrity
                     }
