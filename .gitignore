@@ -33,6 +33,10 @@ output/
 
 setup.sh
 generated_frames/
+extracted_frames/
+downloaded/
+token.pickle
+client_secrets.json
 extraction_folder/decoded_files/
 original.md5
 decoded.md5

@@ -1,0 +1,5 @@
+# extra deps for the youtube round-trip test (roundtrip_youtube.py)
+# the normal pixel-store stuff is in requirements.txt, this is just the youtube bits
+google-api-python-client
+google-auth-oauthlib
+yt-dlp
